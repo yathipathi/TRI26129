@@ -1,60 +1,65 @@
-# SiteForge Visual Editor Technical Specification
+# SiteForge Professional Visual Editor Specification (`EDITOR_SPEC.md`)
 
 ## Overview
-The **SiteForge Visual Editor** operates exclusively on `SiteSpec` structured data (validated via Zod schemas). It provides a 3-pane responsive editing environment (`/projects/[id]/edit`) where manual schema-driven modifications and AI-assisted proposals work safely together.
+The SiteForge Visual Editor (`/projects/[id]/preview`) is a professional-grade visual editor designed for creating, editing, and fact-checking multi-page web applications. Operating strictly on structured `SiteSpec` data (never raw unmaintainable HTML), it combines live canvas interaction, granular manual section control, and source-grounded AI editing.
 
 ---
 
-## 1. Section Type Registry & Catalog
-All section types are registered in `src/lib/section-registry.ts` with categories, style variants, default properties, and schema field descriptors.
+## 1. Core Architecture & Sandboxed Canvas
 
-| Section Type | Category | Supported Style Variants | Key Schema Fields |
-| :--- | :--- | :--- | :--- |
-| `hero` | Hero & Intro | `minimal-brutalist`, `split-media`, `centered-badge` | `badge`, `title`, `subtitle`, `ctaPrimaryText`, `ctaPrimaryLink`, `ctaSecondaryText`, `ctaSecondaryLink` |
-| `features` | Content & Features | `grid-cards`, `numbered-list` | `badge`, `title`, `subtitle`, `items` (repeatable array: `title`, `description`) |
-| `pricing` | Commerce & Services | `3-tier-popular`, `horizontal-table` | `badge`, `title`, `subtitle`, `items` (repeatable array: `title`, `price`, `period`, `badge`, `description`) |
-| `testimonials` | Social Proof & Media | `quote-cards` | `badge`, `title`, `subtitle`, `items` (repeatable array: `quote`, `author`, `role`) |
-| `faq` | Content & Features | `accordion-bordered` | `badge`, `title`, `subtitle`, `items` (repeatable array: `question`, `answer`) |
-| `contact` | Forms & Contact | `boxed-card` | `badge`, `title`, `subtitle`, `ctaText` |
+- **Route**: `/projects/[id]/preview` (Auth required, ownership verified).
+- **Sandboxed Canvas**: Renders the site inside an `<iframe>` configured with `sandbox="allow-scripts allow-forms allow-popups"` (strictly excluding `allow-same-origin`).
+- **Bridge Script Overlay**: Lightweight script ([preview-bridge.ts](file:///c:/Users/YATHIPATHI%20SATHYA/Downloads/HACTHON_KITSW/src/lib/preview-bridge.ts)) injected into the canvas in Edit Mode to handle postMessage IPC, hover outlines, click selection, and double-click inline text editing.
+- **Per-Section DOM Patching**: `/api/projects/[id]/render-section` renders raw HTML for individual sections to patch the iframe DOM instantly without reloading.
 
 ---
 
-## 2. Field Widget Catalog & UI Inspector
-The Right Pane Inspector (`src/components/editor/EditorRightPane.tsx`) automatically generates input forms from Zod schema metadata:
+## 2. Operation Types & RFC 6902 JSON Patches
 
-- **Text**: Single-line input with length validation.
-- **Textarea**: Multi-line text for subtitles, descriptions, and quotes.
-- **Link Picker**: Validates internal page references (`index.html`, `about.html`), section anchors (`#pricing`), external URLs (`https://`), `mailto:`, `tel:`, and direct WhatsApp links.
-- **Image Picker**: Client & server validated file upload (`/api/projects/[id]/assets`) with size cap (5 MB), allowed MIME types (PNG, JPEG, WebP, SVG), and REQUIRED alt text.
-- **Color Picker**: Theme palette tokens (`primary`, `secondary`, `accent`) and custom hex values with contrast warnings.
-- **Repeatable List Widget**: Add, remove, duplicate, and reorder list items (features, plans, FAQs) with min/max item count validation.
-- **Pinned Field Toggle**: Small pin icon next to every field; manual edits pin the field to protect it against AI overwrite.
+All edits produce typed operations:
 
----
-
-## 3. Editor Command Stack & Operation Types
-All state mutations are encapsulated in command objects supporting unlimited Undo/Redo (`Ctrl+Z`, `Ctrl+Shift+Z`):
-
-```ts
-export type OperationType =
-  | 'UPDATE_SECTION_PROPS'
-  | 'ADD_SECTION'
-  | 'DELETE_SECTION'
-  | 'REORDER_SECTIONS'
-  | 'DUPLICATE_SECTION'
-  | 'TOGGLE_SECTION_LOCK'
-  | 'TOGGLE_SECTION_HIDE'
-  | 'UPDATE_THEME'
-  | 'UPDATE_PAGE_SEO'
-  | 'ADD_PAGE'
-  | 'DELETE_PAGE'
-  | 'REORDER_PAGES';
-```
+| Operation Type | Target Scope | Description |
+| :--- | :--- | :--- |
+| `add_section` | `page` / `site` | Inserts a new section from library or AI at a specified index. |
+| `update_props` | `section` | Updates content, layout, style, or items of a single target section. |
+| `remove_section` | `page` | Deletes a section with undo toast recovery. |
+| `move_section` | `page` | Swaps section order up or down. |
+| `update_theme` | `site` | Updates global Material 3 / Fluent 2 design tokens across all pages. |
+| `update_page` | `page` | Updates page slug, name, title, or SEO metadata. |
 
 ---
 
-## 4. AI Proposal Contract & Pinned Field Rules
-- **Scope Selector**: Requests are scoped to `'section'`, `'page'`, or `'site'`.
-- **JSON Output Contract**: The LLM returns structured JSON proposals (never raw HTML/JS).
-- **Pinned Field Protection**: Any field edited manually by the user receives a `pinned` attribute. AI updates skip pinned fields unless the user explicitly enables overwrite.
-- **Proposal Review Modal**: All AI results render a before/after diff summary with **Accept All**, **Accept Selected**, and **Reject** buttons before applying.
+## 3. Pinned Fields & Section Locking Mechanics
+
+1. **Section Locking (`isLocked: true`)**:
+   - When a section is locked by the user, all manual, AI quick actions, and page-wide prompts are rejected both on the client and server (`400 Bad Request`).
+2. **Auto-Pinning on Manual Edits (`pinnedFields`)**:
+   - Any property edited manually by hand is automatically appended to `section.pinnedFields`.
+   - AI operations skip modifying `pinnedFields` unless the user explicitly toggles *"Allow AI to change my manual edits"* for that request.
+   - Skipped pinned fields are logged and presented in the proposal review modal.
+
+---
+
+## 4. Zero-Collateral Byte Hash Verification
+
+- Before and after every section mutation, SHA-256 byte hashes are computed for every section (`computeSectionHash`).
+- `assertZeroCollateralDamage` verifies that every non-target section remains 100% byte-identical.
+- Violations are logged and flagged; valid edits display a green confirmation badge:
+  > *"Only this section changed (Byte-identical zero-collateral proof verified)"*
+
+---
+
+## 5. Security, Asset Manager & Link Rules
+
+- **Asset Manager**: Image uploads require magic byte validation (`PNG`, `JPG`, `WEBP`, `GIF`, `SVG`), 10 MB size caps, metadata stripping, and **REQUIRED accessible alt text** (or explicit decorative marking).
+- **SSRF Safety**: External image URLs fetched via `/api/assets/rehost` block private/loopback IP address ranges (`127.0.0.1`, `10.0.0.0/8`, `172.16.0.0/12`, `192.168.0.0/16`, `localhost`).
+- **Link Sanitizer**: `sanitizeLinkUrl` enforces safe protocols (`https:`, `http:`, `tel:`, `mailto:`, `https://wa.me/`, `#`) and strictly blocks dangerous `javascript:` or `data:` schemes.
+
+---
+
+## 6. Versioning, Autosave & Concurrency
+
+- **Debounced Autosave**: Draft edits autosave to DB every 1.5 seconds with incremental revision numbers.
+- **Optimistic Concurrency (409 Conflict)**: If multiple tabs/sessions edit the same project, the server detects revision mismatches and presents a conflict resolution modal (**Reload**, **Merge**, **Overwrite**).
+- **Auto-Checkpointing**: Version checkpoints are created automatically upon accepting AI proposals, adding/removing sections, performing page operations, or exporting.
+- **Version Timeline Comparison**: Compare any two versions visually and via field-level property diffs (`/api/projects/[id]/versions/compare`).

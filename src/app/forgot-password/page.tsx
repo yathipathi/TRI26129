@@ -2,7 +2,8 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { ArrowLeft, Send, CheckCircle2, AlertCircle } from 'lucide-react';
+import { ArrowLeft, Send, CheckCircle2 } from 'lucide-react';
+import { Button, TextField, LinearProgress, Badge } from '@/components/ui';
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState('');
@@ -33,57 +34,60 @@ export default function ForgotPasswordPage() {
   };
 
   return (
-    <div className="min-h-screen bg-neutral-100 text-black font-sans selection:bg-black selection:text-white flex flex-col justify-center items-center p-6">
-      <div className="max-w-md w-full border-2 border-black bg-white p-8 sm:p-10 shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] space-y-6 font-mono">
-        <div className="flex items-center justify-between border-b-2 border-black pb-4">
-          <Link href="/login" className="p-1 border border-black hover:bg-black hover:text-white transition-colors">
-            <ArrowLeft className="w-4 h-4" />
+    <div className="min-h-screen bg-md-surface-low text-md-on-surface flex flex-col justify-center items-center p-6 selection:bg-md-primary-container selection:text-md-on-primary-container">
+      <div className="max-w-md w-full bg-md-surface rounded-md-xl border border-md-outline-variant/60 shadow-md-2 p-8 md:p-10 space-y-6 m3-transition">
+        {loading && <LinearProgress className="mb-2" />}
+
+        <div className="flex items-center justify-between border-b border-md-outline-variant/40 pb-5">
+          <Link
+            href="/login"
+            className="p-2 rounded-md-full hover:bg-md-surface-container text-md-on-surface-variant m3-transition"
+          >
+            <ArrowLeft className="w-5 h-5" />
           </Link>
-          <span className="text-[10px] font-bold uppercase px-2 py-0.5 border border-black bg-neutral-100">
-            RESET PASSWORD
-          </span>
+          <Badge variant="tonal">Password Reset</Badge>
         </div>
 
         <div>
-          <h1 className="text-2xl font-black uppercase text-black">Reset Password</h1>
-          <p className="text-xs text-neutral-600 mt-1">Enter your registered email address to receive password recovery instructions.</p>
+          <h1 className="text-2xl font-bold tracking-tight text-md-on-surface">Reset Password</h1>
+          <p className="text-xs text-md-on-surface-variant mt-1.5">
+            Enter your registered email address to receive password recovery instructions.
+          </p>
         </div>
 
         {submitted ? (
-          <div className="p-4 border-2 border-emerald-600 bg-emerald-50 text-emerald-900 text-xs space-y-3">
-            <div className="flex items-center gap-2 font-bold uppercase">
-              <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+          <div className="p-4 rounded-md-md border border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 text-xs space-y-3 animate-fadeIn">
+            <div className="flex items-center gap-2 font-semibold text-sm">
+              <CheckCircle2 className="w-5 h-5 text-emerald-600" />
               <span>Reset Dispatch Triggered</span>
             </div>
             <p className="leading-relaxed">{message}</p>
             <div className="pt-2">
-              <Link href="/login" className="font-bold underline uppercase">
+              <Link href="/login" className="font-semibold text-md-primary hover:underline flex items-center gap-1.5">
                 Return to Sign In →
               </Link>
             </div>
           </div>
         ) : (
-          <form onSubmit={handleSubmit} className="space-y-4 text-xs">
-            <div>
-              <label className="block font-bold uppercase mb-1">Email Address</label>
-              <input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-                placeholder="name@company.com"
-                className="w-full p-3 border-2 border-black bg-white text-black outline-none focus:ring-2 focus:ring-black font-mono"
-              />
-            </div>
+          <form onSubmit={handleSubmit} className="space-y-5">
+            <TextField
+              label="Email Address"
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+              placeholder="name@company.com"
+            />
 
-            <button
+            <Button
               type="submit"
               disabled={loading}
-              className="w-full py-4 bg-black text-white font-bold uppercase tracking-wider hover:bg-neutral-800 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-all flex items-center justify-center gap-2"
+              variant="filled"
+              className="w-full py-3 text-sm font-semibold shadow-md-1 hover:shadow-md-2"
             >
               <Send className="w-4 h-4" />
               <span>{loading ? 'Processing...' : 'Send Reset Link'}</span>
-            </button>
+            </Button>
           </form>
         )}
       </div>

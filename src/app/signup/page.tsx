@@ -3,7 +3,8 @@
 import React, { useState, Suspense } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Eye, EyeOff, AlertCircle, CheckCircle2, ArrowRight, Shield } from 'lucide-react';
+import { Eye, EyeOff, AlertCircle, ArrowRight, ShieldCheck, Sparkles } from 'lucide-react';
+import { Button, Input, TextField, LinearProgress, Badge } from '@/components/ui';
 
 function SignupContent() {
   const router = useRouter();
@@ -22,14 +23,14 @@ function SignupContent() {
 
   // Password strength calculation
   const getPasswordStrength = (pwd: string) => {
-    if (!pwd) return { score: 0, label: '', color: 'bg-neutral-200' };
+    if (!pwd) return { score: 0, label: '', color: 'bg-md-outline-variant' };
     let score = 0;
     if (pwd.length >= 8) score++;
     if (/[A-Z]/.test(pwd)) score++;
     if (/[0-9]/.test(pwd)) score++;
     if (/[^A-Za-z0-9]/.test(pwd)) score++;
 
-    if (score <= 1) return { score, label: 'Weak', color: 'bg-red-500' };
+    if (score <= 1) return { score, label: 'Weak', color: 'bg-md-error' };
     if (score === 2 || score === 3) return { score, label: 'Moderate', color: 'bg-amber-500' };
     return { score, label: 'Strong', color: 'bg-emerald-500' };
   };
@@ -80,134 +81,144 @@ function SignupContent() {
   };
 
   return (
-    <div className="min-h-screen bg-neutral-100 text-black font-sans selection:bg-black selection:text-white flex flex-col justify-center items-center p-6">
-      <div className="max-w-md w-full border-2 border-black bg-white p-8 sm:p-10 shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] space-y-6 font-mono">
-        <div className="flex items-center justify-between border-b-2 border-black pb-4">
-          <div className="font-black text-base uppercase flex items-center gap-2">
-            <span className="w-3.5 h-3.5 bg-orange-500 rounded-full border border-black inline-block"></span>
-            <span>SiteForge Portal</span>
+    <div className="min-h-screen bg-md-surface-low text-md-on-surface flex flex-col justify-center items-center p-6 selection:bg-md-primary-container selection:text-md-on-primary-container">
+      <div className="max-w-md w-full bg-md-surface rounded-md-xl border border-md-outline-variant/60 shadow-md-2 p-8 md:p-10 space-y-6 m3-transition">
+        {loading && <LinearProgress className="mb-2" />}
+
+        {/* Header */}
+        <div className="flex items-center justify-between border-b border-md-outline-variant/40 pb-5">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-md-full bg-md-primary-container text-md-on-primary-container flex items-center justify-center font-bold text-sm shadow-xs">
+              <Sparkles className="w-5 h-5 text-md-primary" />
+            </div>
+            <div>
+              <span className="font-bold text-base block text-md-on-surface">SiteForge</span>
+              <span className="text-[11px] text-md-on-surface-variant">Account Creation</span>
+            </div>
           </div>
-          <span className="text-[10px] font-bold uppercase px-2 py-0.5 border border-black bg-neutral-100">
-            REGISTER
-          </span>
+          <Badge variant="primary">Register</Badge>
         </div>
 
         <div>
-          <h1 className="text-2xl font-black uppercase text-black">Create Account</h1>
-          <p className="text-xs text-neutral-600 mt-1">Start building verified websites with zero vendor lock-in.</p>
+          <h1 className="text-2xl font-bold tracking-tight text-md-on-surface">Create your account</h1>
+          <p className="text-xs text-md-on-surface-variant mt-1.5">
+            Start building evidence-backed websites with zero vendor lock-in.
+          </p>
         </div>
 
         {errorMessage && (
-          <div className="p-3.5 border-2 border-red-600 bg-red-50 text-red-900 text-xs flex items-center gap-2" role="alert">
-            <AlertCircle className="w-4 h-4 shrink-0 text-red-600" />
+          <div className="p-4 rounded-md-md border border-md-error/30 bg-md-error-container text-md-on-error-container text-xs flex items-center gap-3 animate-fadeIn" role="alert">
+            <AlertCircle className="w-4 h-4 shrink-0 text-md-error" />
             <span>{errorMessage}</span>
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="space-y-4 text-xs">
-          <div>
-            <label className="block font-bold uppercase mb-1">Full Name</label>
-            <input
-              type="text"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              required
-              placeholder="e.g. Lead Architect"
-              className="w-full p-3 border-2 border-black bg-white text-black outline-none focus:ring-2 focus:ring-black font-mono"
-            />
-          </div>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <TextField
+            label="Full Name"
+            type="text"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            required
+            placeholder="e.g. Lead Architect"
+          />
+
+          <TextField
+            label="Email Address"
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            required
+            placeholder="name@company.com"
+          />
 
           <div>
-            <label className="block font-bold uppercase mb-1">Email Address</label>
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-              placeholder="name@company.com"
-              className="w-full p-3 border-2 border-black bg-white text-black outline-none focus:ring-2 focus:ring-black font-mono"
-            />
-          </div>
-
-          <div>
-            <label className="block font-bold uppercase mb-1">Password</label>
+            <label className="block text-xs font-medium text-md-on-surface-variant mb-1.5">Password</label>
             <div className="relative">
-              <input
+              <Input
                 type={showPassword ? 'text' : 'password'}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
                 placeholder="Minimum 8 characters"
-                className="w-full p-3 pr-10 border-2 border-black bg-white text-black outline-none focus:ring-2 focus:ring-black font-mono"
+                className="pr-10"
               />
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-3 text-neutral-500 hover:text-black"
+                className="absolute right-3 top-3 text-md-on-surface-variant hover:text-md-on-surface cursor-pointer"
               >
                 {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
               </button>
             </div>
 
-            {/* Password Strength Meter */}
             {password && (
               <div className="mt-2 space-y-1">
-                <div className="flex justify-between items-center text-[10px] font-bold uppercase">
-                  <span>Strength: {strength.label}</span>
-                  <span>{password.length}/8 chars</span>
+                <div className="flex justify-between items-center text-[11px] text-md-on-surface-variant">
+                  <span>Password Strength:</span>
+                  <span className="font-semibold">{strength.label}</span>
                 </div>
-                <div className="w-full h-1.5 bg-neutral-200 border border-black">
+                <div className="h-1.5 w-full bg-md-surface-container rounded-md-full overflow-hidden flex">
                   <div
-                    className={`h-full ${strength.color} transition-all duration-300`}
+                    className={`h-full m3-transition ${strength.color}`}
                     style={{ width: `${(strength.score / 4) * 100}%` }}
-                  ></div>
+                  />
                 </div>
               </div>
             )}
           </div>
 
-          <div>
-            <label className="block font-bold uppercase mb-1">Confirm Password</label>
-            <input
-              type="password"
-              value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
-              required
-              placeholder="Re-enter password"
-              className="w-full p-3 border-2 border-black bg-white text-black outline-none focus:ring-2 focus:ring-black font-mono"
-            />
-          </div>
+          <TextField
+            label="Confirm Password"
+            type="password"
+            value={confirmPassword}
+            onChange={(e) => setConfirmPassword(e.target.value)}
+            required
+            placeholder="Re-enter password"
+          />
 
-          <div className="pt-1">
-            <label className="flex items-start gap-2 cursor-pointer">
+          <div className="pt-2">
+            <label className="flex items-start gap-2.5 cursor-pointer text-xs text-md-on-surface-variant">
               <input
                 type="checkbox"
                 checked={terms}
                 onChange={(e) => setTerms(e.target.checked)}
-                className="w-4 h-4 border-2 border-black accent-black mt-0.5"
+                className="mt-0.5 rounded border-md-outline text-md-primary focus:ring-md-primary/20 w-4 h-4"
               />
-              <span className="text-[11px] leading-tight">
-                I accept the terms of service and acknowledge that all generated sites undergo Playwright verification crawling.
+              <span>
+                I accept the SiteForge terms of service, local privacy guidelines, and evidence verification policies.
               </span>
             </label>
           </div>
 
-          <button
+          <Button
             type="submit"
             disabled={loading}
-            className="w-full py-4 bg-black text-white font-bold uppercase tracking-wider hover:bg-neutral-800 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-all flex items-center justify-center gap-2"
+            variant="filled"
+            className="w-full py-3 text-sm font-semibold shadow-md-1 hover:shadow-md-2"
           >
-            {loading ? <span className="animate-spin">●</span> : <ArrowRight className="w-4 h-4" />}
-            <span>{loading ? 'Creating Account...' : 'Register & Enter Dashboard'}</span>
-          </button>
+            {loading ? (
+              <span>Creating Account...</span>
+            ) : (
+              <>
+                <span>Create Account & Get Started</span>
+                <ArrowRight className="w-4 h-4" />
+              </>
+            )}
+          </Button>
         </form>
 
-        <div className="text-center text-xs border-t-2 border-black pt-4">
-          <span className="text-neutral-600">Already have an account? </span>
-          <Link href="/login" className="font-bold underline text-black hover:text-orange-600">
+        <div className="text-center text-xs border-t border-md-outline-variant/40 pt-5 text-md-on-surface-variant">
+          Already have an account?{' '}
+          <Link href="/login" className="text-md-primary font-semibold hover:underline">
             Sign in
           </Link>
         </div>
+      </div>
+
+      <div className="mt-8 text-center text-xs text-md-on-surface-variant/80 flex items-center gap-2">
+        <ShieldCheck className="w-4 h-4 text-md-primary" />
+        <span>Protected by Automated Hallucination Guard & Playwright Verifier</span>
       </div>
     </div>
   );
@@ -215,7 +226,7 @@ function SignupContent() {
 
 export default function SignupPage() {
   return (
-    <Suspense fallback={<div className="p-8 font-mono text-xs">Loading Auth Gate...</div>}>
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center text-xs text-md-on-surface-variant">Loading registration...</div>}>
       <SignupContent />
     </Suspense>
   );

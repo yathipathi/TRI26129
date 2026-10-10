@@ -6,9 +6,14 @@ import { useSearchParams } from 'next/navigation';
 import { 
   Sparkles, Monitor, Tablet, Smartphone, Download, ExternalLink, 
   Send, RefreshCw, Layers, CheckCircle2, AlertCircle, ArrowLeft, 
-  Search, ShieldCheck, History, CheckSquare, FileText
+  Search, ShieldCheck, History, CheckSquare, FileText, Edit3, Activity
 } from 'lucide-react';
 import VoiceInputButton from '@/components/voice/VoiceInputButton';
+import {
+  Button, Card, CardHeader, CardContent, CardFooter,
+  Badge, Chip, Input, TextField, Dialog, DialogContent, DialogHeader, DialogTitle,
+  LinearProgress
+} from '@/components/ui';
 
 interface ProgressStep {
   step: string;
@@ -20,14 +25,15 @@ interface ProgressStep {
 function BuilderContent() {
   const searchParams = useSearchParams();
   const templateFromQuery = searchParams.get('template') || '';
+  const promptFromQuery = searchParams.get('prompt') || '';
 
   // Intake State
-  const [siteName, setSiteName] = useState('Nexa Digital');
+  const [siteName, setSiteName] = useState(promptFromQuery ? 'Custom Generated Website' : 'Nexa Digital');
   const [siteType, setSiteType] = useState('Startup/SaaS');
-  const [purpose, setPurpose] = useState('Promote software products and drive trial signups');
+  const [purpose, setPurpose] = useState(promptFromQuery || 'Promote software products and drive trial signups');
   const [targetAudience, setTargetAudience] = useState('Developers and engineering teams');
   const [toneStyle, setToneStyle] = useState('Professional, Modern, High-Contrast');
-  const [colorPreference, setColorPreference] = useState('Monochrome with Orange Accent');
+  const [colorPreference, setColorPreference] = useState('Material 3 Seed Blue (#0b57d0)');
   const [userContent, setUserContent] = useState('');
   const [templateSlug, setTemplateSlug] = useState(templateFromQuery);
 
@@ -138,7 +144,7 @@ function BuilderContent() {
     } catch (err: any) {
       setStepsLog((prev) => [...prev, { step: 'Error', detail: err.message, timestamp: Date.now() }]);
       setCurrentStep('Error');
-    } fontFinally: {
+    } finally {
       setIsGenerating(false);
     }
   };
@@ -151,408 +157,356 @@ function BuilderContent() {
         body: JSON.stringify({ siteId: targetSiteId }),
       });
       const data = await res.json();
-      if (data.report) {
+      if (res.ok && data.report) {
         setCrawlerReport(data.report);
       }
-    } catch {
-      setCrawlerReport({ status: 'PASS', passedCount: 16, failedCount: 0, deadLinks: [] });
+    } catch (e) {
+      console.error('Crawler failed', e);
     }
   };
 
-  const handleRefine = async () => {
+  const handleRefine = async (e: React.FormEvent) => {
+    e.preventDefault();
     if (!refinePrompt.trim() || !siteId || isRefining) return;
 
     setIsRefining(true);
+    const instruction = refinePrompt;
+    setRefinePrompt('');
+
     try {
-      const res = await fetch('/api/refine', {
+      const res = await fetch(`/api/projects/${siteId}/refine`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ siteId, instruction: refinePrompt }),
+        body: JSON.stringify({ prompt: instruction }),
       });
-
+      const data = await res.json();
       if (res.ok) {
-        setRefinePrompt('');
         setCurrentVersion((v) => v + 1);
         setIframeKey((k) => k + 1);
         runCrawler(siteId);
       } else {
-        alert('Refine request failed.');
+        alert(data.error || 'Refinement failed');
       }
-    } catch (err) {
-      alert('Error refining site.');
+    } catch {
+      alert('Error connecting to refine API');
     } finally {
       setIsRefining(false);
     }
   };
 
-  const getViewportWidth = () => {
-    switch (viewport) {
-      case 'mobile':
-        return 'max-w-[390px] h-[720px] rounded-3xl border-8 border-neutral-900 shadow-2xl';
-      case 'tablet':
-        return 'max-w-[768px] h-[800px] rounded-xl border-4 border-neutral-900 shadow-xl';
-      default:
-        return 'w-full h-full';
-    }
+  const handleExportZip = async () => {
+    if (!siteId) return;
+    window.location.href = `/api/export?siteId=${siteId}`;
   };
 
-  const isChecklistComplete = Object.values(checklist).every(Boolean);
-
   return (
-    <div className="min-h-screen bg-neutral-100 text-black font-sans selection:bg-black selection:text-white flex flex-col h-screen overflow-hidden">
-      {/* Builder Top Navbar */}
-      <header className="h-16 border-b-2 border-black bg-white px-6 flex items-center justify-between z-30 shrink-0">
-        <div className="flex items-center gap-4">
-          <Link href="/" className="p-1.5 border border-black hover:bg-black hover:text-white transition-colors">
-            <ArrowLeft className="w-4 h-4" />
+    <div className="min-h-screen bg-md-surface-low text-md-on-surface font-sans flex flex-col selection:bg-md-primary-container selection:text-md-on-primary-container">
+      {/* Top Bar */}
+      <header className="sticky top-0 z-40 bg-md-surface/90 backdrop-blur-md border-b border-md-outline-variant/50 px-6 py-3 flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <Link href="/" className="p-2 rounded-md-full hover:bg-md-surface-container text-md-on-surface-variant m3-transition">
+            <ArrowLeft className="w-5 h-5" />
           </Link>
-          <div className="font-bold text-sm uppercase flex items-center gap-2">
-            <span className="w-2.5 h-2.5 bg-orange-500 rounded-full inline-block"></span>
-            <span>SiteForge AI Studio</span>
+          <div className="flex items-center gap-2">
+            <div className="w-8 h-8 rounded-md-full bg-md-primary-container text-md-on-primary-container flex items-center justify-center font-bold text-xs">
+              <Sparkles className="w-4 h-4 text-md-primary" />
+            </div>
+            <span className="font-bold text-base text-md-on-surface">AI Site Builder</span>
           </div>
-          {siteId && (
-            <span className="text-[10px] font-mono font-bold uppercase px-2 py-0.5 border border-black bg-neutral-100">
-              v{currentVersion}
-            </span>
-          )}
         </div>
 
-        {/* Viewport Controls */}
         {siteId && (
-          <div className="flex items-center border-2 border-black p-0.5 bg-neutral-100 font-mono">
-            <button
-              onClick={() => setViewport('desktop')}
-              className={`px-3 py-1 text-xs font-bold uppercase transition-all ${viewport === 'desktop' ? 'bg-black text-white' : 'text-black'}`}
-            >
-              <Monitor className="w-3.5 h-3.5 inline mr-1" /> Desktop
-            </button>
-            <button
-              onClick={() => setViewport('tablet')}
-              className={`px-3 py-1 text-xs font-bold uppercase transition-all ${viewport === 'tablet' ? 'bg-black text-white' : 'text-black'}`}
-            >
-              <Tablet className="w-3.5 h-3.5 inline mr-1" /> Tablet
-            </button>
-            <button
-              onClick={() => setViewport('mobile')}
-              className={`px-3 py-1 text-xs font-bold uppercase transition-all ${viewport === 'mobile' ? 'bg-black text-white' : 'text-black'}`}
-            >
-              <Smartphone className="w-3.5 h-3.5 inline mr-1" /> Mobile
-            </button>
+          <div className="flex items-center gap-3">
+            <Badge variant={crawlerReport?.status === 'PASS' ? 'primary' : 'tonal'}>
+              {crawlerReport ? `Crawler: ${crawlerReport.status} (${crawlerReport.passedCount} links passed)` : 'Running Verifier...'}
+            </Badge>
+
+            <Link href={`/projects/${siteId}/edit`}>
+              <Button variant="tonal" size="sm">
+                <Edit3 className="w-3.5 h-3.5" />
+                <span>Open Visual Editor</span>
+              </Button>
+            </Link>
+
+            <Button variant="filled" size="sm" onClick={() => setShowValidationGate(true)}>
+              <Download className="w-3.5 h-3.5" />
+              <span>Export ZIP</span>
+            </Button>
           </div>
         )}
-
-        {/* Verification Status & Actions */}
-        <div className="flex items-center gap-2 font-mono">
-          {crawlerReport && (
-            <div className={`px-3 py-1.5 border border-black text-xs font-bold uppercase flex items-center gap-1.5 ${
-              crawlerReport.status === 'PASS' ? 'bg-emerald-100 text-emerald-900 border-emerald-600' : 'bg-amber-100 text-amber-900 border-amber-600'
-            }`}>
-              <ShieldCheck className="w-4 h-4" />
-              <span>{crawlerReport.status === 'PASS' ? 'VERIFIED (0 Dead Links)' : 'CRAWLER IN REVIEW'}</span>
-            </div>
-          )}
-
-          {sourcesUsed.length > 0 && (
-            <button
-              onClick={() => setShowSourcesModal(true)}
-              className="px-3 py-1.5 border border-black text-xs font-bold uppercase hover:bg-neutral-100 flex items-center gap-1.5"
-            >
-              <Search className="w-3.5 h-3.5" />
-              <span>Sources ({sourcesUsed.length})</span>
-            </button>
-          )}
-
-          {siteId && (
-            <>
-              <button
-                onClick={() => setShowValidationGate(true)}
-                className="px-3.5 py-1.5 border-2 border-black bg-orange-500 text-black hover:bg-orange-600 text-xs font-bold uppercase flex items-center gap-1.5 shadow-2xs"
-              >
-                <CheckSquare className="w-3.5 h-3.5" />
-                <span>Export ZIP</span>
-              </button>
-              <a
-                href={`/preview/${siteId}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="px-3 py-1.5 border-2 border-black bg-black text-white hover:bg-neutral-800 text-xs font-bold uppercase flex items-center gap-1.5 shadow-2xs"
-              >
-                <span>Tab</span>
-                <ExternalLink className="w-3.5 h-3.5" />
-              </a>
-            </>
-          )}
-        </div>
       </header>
 
-      {/* Main Split Interface */}
-      <div className="flex-1 flex flex-col md:flex-row overflow-hidden relative">
-        {/* Left Specification & Control Panel */}
-        <div className="w-full md:w-[420px] bg-white border-r-2 border-black flex flex-col h-full overflow-y-auto shrink-0 p-6 space-y-6">
-          <div className="border-b-2 border-black pb-4">
-            <span className="text-[10px] font-mono font-bold uppercase px-2 py-0.5 border border-black bg-neutral-100 text-black mb-1 inline-block">
-              INTAKE SPECIFICATION
-            </span>
-            <h2 className="text-xl font-black uppercase text-black">Project Requirements</h2>
+      {/* Main Workspace split into Intake vs Live Workspace */}
+      <div className="flex-1 flex flex-col lg:flex-row overflow-hidden">
+        {/* Left Pane: Prompt & Parameters Form */}
+        <aside className="w-full lg:w-[440px] bg-md-surface border-r border-md-outline-variant/40 p-6 overflow-y-auto space-y-6 shrink-0">
+          <div className="space-y-2">
+            <div className="flex items-center gap-2">
+              <Badge variant="primary">Step 1: Intake Spec</Badge>
+              {templateSlug && <Badge variant="tonal">Template: {templateSlug}</Badge>}
+            </div>
+            <h2 className="text-xl font-bold tracking-tight text-md-on-surface">Site Architecture Prompt</h2>
+            <p className="text-xs text-md-on-surface-variant">
+              Provide your business requirements or click voice input to speak in English/Telugu.
+            </p>
           </div>
 
-          <div className="space-y-4 font-mono text-xs">
-            <div>
-              <label className="block font-bold uppercase mb-1">Site / Business Name</label>
-              <input
-                type="text"
-                value={siteName}
-                onChange={(e) => setSiteName(e.target.value)}
-                className="w-full p-2.5 border-2 border-black bg-white text-black outline-none focus:ring-1 focus:ring-black"
-              />
-            </div>
+          <div className="space-y-4">
+            <TextField
+              label="Website Name / Brand"
+              value={siteName}
+              onChange={(e) => setSiteName(e.target.value)}
+              placeholder="e.g. Hyderabad Craft Bakery"
+            />
 
             <div>
-              <label className="block font-bold uppercase mb-1">Business Category / Type</label>
+              <label className="block text-xs font-medium text-md-on-surface-variant mb-1.5">Industry Category</label>
               <select
                 value={siteType}
                 onChange={(e) => setSiteType(e.target.value)}
-                className="w-full p-2.5 border-2 border-black bg-white text-black outline-none focus:ring-1 focus:ring-black"
+                className="w-full px-3.5 py-2.5 rounded-md-sm border border-md-outline bg-md-surface-lowest text-md-on-surface text-sm outline-none m3-transition focus:border-md-primary"
               >
                 <option value="Startup/SaaS">Startup / SaaS</option>
-                <option value="Restaurant">Restaurant & Culinary</option>
-                <option value="Law Firm">Law Firm & Legal</option>
-                <option value="Clinic">Medical & Clinic</option>
-                <option value="Ecommerce">E-Commerce Store</option>
-                <option value="Portfolio">Portfolio & Monograph</option>
-                <option value="Education">Education & Academy</option>
-                <option value="Real Estate">Real Estate & Villas</option>
-                <option value="Photography">Photography Studio</option>
-                <option value="NGO">NGO & Non-Profit</option>
-                <option value="Agency">Digital Agency</option>
-                <option value="Blog">Tech Blog & Dispatches</option>
+                <option value="Restaurant/Café">Restaurant / Café</option>
+                <option value="Portfolio/Personal">Portfolio / Personal</option>
+                <option value="E-Commerce">E-Commerce Store</option>
+                <option value="Clinic/Healthcare">Clinic / Healthcare</option>
+                <option value="Law Firm">Law Firm / Professional Services</option>
+                <option value="Agency">Agency / Studio</option>
               </select>
             </div>
 
             <div>
-              <label className="block font-bold uppercase mb-1">Color Palette Preference</label>
-              <input
-                type="text"
-                value={colorPreference}
-                onChange={(e) => setColorPreference(e.target.value)}
-                placeholder="e.g. Monochrome with Orange Accent"
-                className="w-full p-2.5 border-2 border-black bg-white text-black outline-none focus:ring-1 focus:ring-black"
-              />
-            </div>
-
-            <div>
-              <label className="block font-bold uppercase mb-1">Template Preset (Optional)</label>
-              <input
-                type="text"
-                value={templateSlug}
-                onChange={(e) => setTemplateSlug(e.target.value)}
-                placeholder="e.g. restaurant, portfolio, law-firm"
-                className="w-full p-2.5 border-2 border-black bg-white text-black outline-none focus:ring-1 focus:ring-black"
-              />
-            </div>
-
-            <div>
-              <div className="flex items-center justify-between mb-1">
-                <label className="block font-bold uppercase">Custom Notes / Prompt</label>
-                <VoiceInputButton onTranscript={(txt) => setUserContent((prev) => (prev ? `${prev} ${txt}` : txt))} />
+              <div className="flex items-center justify-between mb-1.5">
+                <label className="block text-xs font-medium text-md-on-surface-variant">Primary Goal & Content</label>
+                <VoiceInputButton onTranscript={(text) => setPurpose((prev) => prev ? `${prev} ${text}` : text)} />
               </div>
               <textarea
+                value={purpose}
+                onChange={(e) => setPurpose(e.target.value)}
                 rows={3}
-                value={userContent}
-                onChange={(e) => setUserContent(e.target.value)}
-                placeholder="Describe specific offerings, location details, or features (Voice prompt supported in Telugu & English)..."
-                className="w-full p-2.5 border-2 border-black bg-white text-black outline-none focus:ring-1 focus:ring-black"
+                placeholder="Describe your site's target features, products, prices..."
+                className="w-full px-3.5 py-2.5 rounded-md-sm border border-md-outline bg-md-surface-lowest text-md-on-surface text-sm outline-none m3-transition focus:border-md-primary resize-none placeholder:text-md-on-surface-variant/50"
               />
             </div>
 
-            <button
+            <TextField
+              label="Target Audience"
+              value={targetAudience}
+              onChange={(e) => setTargetAudience(e.target.value)}
+              placeholder="e.g. Local food lovers in Hyderabad"
+            />
+
+            <Button
               onClick={handleGenerate}
-              disabled={isGenerating}
-              className="w-full py-4 bg-black text-white hover:bg-neutral-800 font-bold uppercase tracking-wider flex items-center justify-center gap-2 border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]"
+              disabled={isGenerating || !siteName.trim()}
+              variant="filled"
+              className="w-full py-3.5 font-semibold text-sm shadow-md-1 hover:shadow-md-2"
             >
-              {isGenerating ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4 text-orange-500" />}
-              <span>{isGenerating ? 'Compiling AI Site...' : 'Generate Website'}</span>
-            </button>
+              {isGenerating ? (
+                <span>Autonomous AI Pipeline Running...</span>
+              ) : (
+                <>
+                  <Sparkles className="w-4 h-4" />
+                  <span>Build Verified Website</span>
+                </>
+              )}
+            </Button>
           </div>
 
-          {/* Live Progress Logs */}
-          <div className="border-t-2 border-black pt-4 space-y-2 font-mono text-[11px]">
-            <div className="font-bold uppercase text-neutral-600 flex items-center justify-between">
-              <span>PIPELINE PROGRESS</span>
-              <span className="text-black font-extrabold">{currentStep}</span>
-            </div>
+          {/* Transparent Agent Execution Logs */}
+          {stepsLog.length > 0 && (
+            <Card className="p-4 bg-md-surface-container space-y-3">
+              <div className="flex items-center justify-between text-xs font-semibold">
+                <span className="text-md-primary flex items-center gap-1.5">
+                  <Activity className="w-3.5 h-3.5" />
+                  Agent Execution Log
+                </span>
+                <Badge variant="tonal">{currentStep}</Badge>
+              </div>
 
-            <div className="space-y-1.5 max-h-40 overflow-y-auto border border-black p-3 bg-neutral-50">
-              {stepsLog.map((log, idx) => (
-                <div key={idx} className="flex items-start gap-1.5">
-                  <span className="text-orange-600 font-bold">●</span>
-                  <div>
-                    <span className="font-bold text-black uppercase">{log.step}: </span>
-                    <span className="text-neutral-600">{log.detail}</span>
+              {isGenerating && <LinearProgress />}
+
+              <div className="space-y-2 max-h-48 overflow-y-auto text-xs font-mono pr-1">
+                {stepsLog.map((s, idx) => (
+                  <div key={idx} className="p-2 rounded bg-md-surface border border-md-outline-variant/40 space-y-0.5">
+                    <div className="flex items-center justify-between font-semibold text-md-on-surface">
+                      <span>{s.step}</span>
+                      <span className="text-[10px] text-md-on-surface-variant">{new Date(s.timestamp).toLocaleTimeString()}</span>
+                    </div>
+                    {s.detail && <p className="text-[11px] text-md-on-surface-variant">{s.detail}</p>}
+                  </div>
+                ))}
+              </div>
+            </Card>
+          )}
+        </aside>
+
+        {/* Right Pane: Sandboxed Live Preview Canvas & Control Toolbar */}
+        <main className="flex-1 bg-md-surface-container-low flex flex-col justify-between overflow-hidden">
+          {siteId ? (
+            <>
+              {/* Device Viewport Bar */}
+              <div className="p-3 bg-md-surface border-b border-md-outline-variant/40 flex items-center justify-between px-6">
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-semibold text-md-on-surface-variant">Device View:</span>
+                  <div className="flex items-center bg-md-surface-container p-1 rounded-md-sm border border-md-outline-variant">
+                    <button
+                      onClick={() => setViewport('desktop')}
+                      className={`p-1.5 rounded-md-xs text-xs ${viewport === 'desktop' ? 'bg-md-surface text-md-primary shadow-xs font-semibold' : 'text-md-on-surface-variant'}`}
+                    >
+                      <Monitor className="w-4 h-4" />
+                    </button>
+                    <button
+                      onClick={() => setViewport('tablet')}
+                      className={`p-1.5 rounded-md-xs text-xs ${viewport === 'tablet' ? 'bg-md-surface text-md-primary shadow-xs font-semibold' : 'text-md-on-surface-variant'}`}
+                    >
+                      <Tablet className="w-4 h-4" />
+                    </button>
+                    <button
+                      onClick={() => setViewport('mobile')}
+                      className={`p-1.5 rounded-md-xs text-xs ${viewport === 'mobile' ? 'bg-md-surface text-md-primary shadow-xs font-semibold' : 'text-md-on-surface-variant'}`}
+                    >
+                      <Smartphone className="w-4 h-4" />
+                    </button>
                   </div>
                 </div>
-              ))}
-              {stepsLog.length === 0 && <div className="text-neutral-400">Standing by for generation prompt...</div>}
-            </div>
-          </div>
-        </div>
 
-        {/* Right Preview Canvas & Refine Chat Overlay */}
-        <div className="flex-1 bg-neutral-200 flex flex-col items-center justify-center p-4 relative overflow-hidden">
-          {siteId ? (
-            <div className={`w-full h-full flex flex-col items-center justify-center transition-all ${getViewportWidth()}`}>
-              <iframe
-                key={iframeKey}
-                sandbox="allow-scripts allow-forms"
-                src={`/api/preview/${siteId}`}
-                title="AI Generated Website Preview"
-                className="w-full h-full flex-1 bg-white border-0 shadow-lg"
-              />
-            </div>
-          ) : (
-            <div className="text-center p-8 border-2 border-black bg-white max-w-md shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]">
-              <div className="w-12 h-12 border-2 border-black bg-black text-white flex items-center justify-center mx-auto mb-4 font-bold">
-                <Layers className="w-6 h-6 text-white" />
+                <div className="flex items-center gap-3">
+                  {sourcesUsed.length > 0 && (
+                    <Button variant="tonal" size="sm" onClick={() => setShowSourcesModal(true)}>
+                      <Search className="w-3.5 h-3.5" />
+                      <span>{sourcesUsed.length} Fact Sources</span>
+                    </Button>
+                  )}
+                  <Link href={`/preview/${siteId}`} target="_blank">
+                    <Button variant="ghost" size="sm">
+                      <ExternalLink className="w-3.5 h-3.5" />
+                      <span>Full Window</span>
+                    </Button>
+                  </Link>
+                </div>
               </div>
-              <h3 className="text-lg font-black uppercase mb-2">Canvas Standing By</h3>
-              <p className="text-xs font-mono text-neutral-600">
-                Configure your intake specifications in the left panel and click <strong>Generate Website</strong> to execute the research, code generation, and verification pipeline.
-              </p>
-            </div>
-          )}
 
-          {/* Refine Chat Box */}
-          {siteId && (
-            <div className="absolute bottom-4 left-6 right-6 max-w-3xl mx-auto border-2 border-black bg-white p-2.5 shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] flex items-center gap-2 font-mono">
-              <input
-                type="text"
-                value={refinePrompt}
-                onChange={(e) => setRefinePrompt(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && handleRefine()}
-                placeholder='Refine instruction (e.g. "change primary color to emerald and update pricing to $49/mo")...'
-                className="flex-1 px-3 py-2 text-xs text-black outline-none"
-              />
-              <button
-                onClick={handleRefine}
-                disabled={isRefining}
-                className="px-4 py-2 bg-black text-white text-xs font-bold uppercase hover:bg-neutral-800 flex items-center gap-1.5"
-              >
-                {isRefining ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
-                <span>Refine</span>
-              </button>
+              {/* Sandboxed Iframe */}
+              <div className="flex-1 p-4 flex justify-center items-center overflow-auto">
+                <iframe
+                  key={iframeKey}
+                  src={`/preview/${siteId}`}
+                  sandbox="allow-scripts allow-forms"
+                  className={`bg-white rounded-md-lg shadow-md-2 border border-md-outline-variant m3-transition h-full ${
+                    viewport === 'desktop' ? 'w-full' : viewport === 'tablet' ? 'w-[768px]' : 'w-[375px]'
+                  }`}
+                />
+              </div>
+
+              {/* Refinement Prompt Bar */}
+              <div className="p-4 bg-md-surface border-t border-md-outline-variant/40">
+                <form onSubmit={handleRefine} className="flex gap-3 max-w-4xl mx-auto">
+                  <Input
+                    type="text"
+                    value={refinePrompt}
+                    onChange={(e) => setRefinePrompt(e.target.value)}
+                    placeholder="Ask AI to refine this site (e.g. Add Telugu language switcher, update hero heading)..."
+                    className="flex-1 py-2.5 text-sm"
+                  />
+                  <Button type="submit" disabled={isRefining || !refinePrompt.trim()} variant="filled" size="sm" className="px-5 font-semibold">
+                    <Send className="w-4 h-4" />
+                    <span>{isRefining ? 'Refining...' : 'Refine Site'}</span>
+                  </Button>
+                </form>
+              </div>
+            </>
+          ) : (
+            <div className="flex-1 flex flex-col items-center justify-center p-8 text-center space-y-4">
+              <div className="w-16 h-16 rounded-md-full bg-md-surface-container flex items-center justify-center text-md-primary shadow-xs">
+                <Sparkles className="w-8 h-8" />
+              </div>
+              <div className="max-w-md">
+                <h3 className="text-xl font-bold text-md-on-surface">Ready to generate website</h3>
+                <p className="text-xs text-md-on-surface-variant mt-1.5">
+                  Fill in your website requirements on the left panel and click &quot;Build Verified Website&quot; to launch the AI research and generation pipeline.
+                </p>
+              </div>
             </div>
           )}
-        </div>
+        </main>
       </div>
 
-      {/* Sources Modal */}
-      {showSourcesModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
-          <div className="bg-white border-2 border-black max-w-lg w-full p-6 shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] space-y-4 font-mono text-xs">
-            <div className="flex justify-between items-center border-b-2 border-black pb-3">
-              <h3 className="font-bold uppercase text-sm">Research Sources & Evidence Context</h3>
-              <button onClick={() => setShowSourcesModal(false)} className="px-2 py-1 border border-black hover:bg-black hover:text-white">✕</button>
-            </div>
-            <div className="space-y-3 max-h-60 overflow-y-auto">
-              {sourcesUsed.map((s, i) => (
-                <div key={i} className="p-3 border border-black bg-neutral-50 space-y-1">
-                  <a href={s.url} target="_blank" rel="noopener noreferrer" className="font-bold text-orange-600 hover:underline flex items-center gap-1">
-                    <span>{s.title}</span>
-                    <ExternalLink className="w-3 h-3 inline" />
-                  </a>
-                  <p className="text-[11px] text-neutral-600">{s.snippet}</p>
-                </div>
-              ))}
-            </div>
+      {/* Sources Citation Modal */}
+      <Dialog open={showSourcesModal} onClose={() => setShowSourcesModal(false)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Internet Research Fact Sources</DialogTitle>
+          </DialogHeader>
+          <div className="p-6 space-y-3 max-h-96 overflow-y-auto">
+            {sourcesUsed.map((src, i) => (
+              <div key={i} className="p-3 bg-md-surface-container rounded-md-md border border-md-outline-variant/40 space-y-1 text-xs">
+                <p className="font-semibold text-md-on-surface">{src.title}</p>
+                <a href={src.url} target="_blank" rel="noopener noreferrer" className="text-md-primary underline break-all block">
+                  {src.url}
+                </a>
+                {src.snippet && <p className="text-md-on-surface-variant text-[11px] italic">{src.snippet}</p>}
+              </div>
+            ))}
           </div>
-        </div>
-      )}
+          <CardFooter className="justify-end">
+            <Button variant="ghost" onClick={() => setShowSourcesModal(false)}>Close</Button>
+          </CardFooter>
+        </DialogContent>
+      </Dialog>
 
-      {/* Human Validation Gate Modal */}
-      {showValidationGate && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs font-mono text-xs">
-          <div className="bg-white border-2 border-black max-w-md w-full p-6 shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] space-y-6">
-            <div className="flex justify-between items-center border-b-2 border-black pb-3">
-              <h3 className="font-black uppercase text-sm flex items-center gap-2">
-                <CheckSquare className="w-4 h-4 text-orange-500" />
-                <span>Human Validation Checklist</span>
-              </h3>
-              <button onClick={() => setShowValidationGate(false)} className="px-2 py-1 border border-black hover:bg-black hover:text-white">✕</button>
-            </div>
-
-            <p className="text-neutral-600">
-              SiteForge requires confirming all review items before exporting standalone code to guarantee zero dead buttons or broken links ship.
+      {/* Human Approval / Export Checklist Gate */}
+      <Dialog open={showValidationGate} onClose={() => setShowValidationGate(false)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Human Approval Gate before ZIP Export</DialogTitle>
+          </DialogHeader>
+          <div className="p-6 space-y-4 text-xs">
+            <p className="text-md-on-surface-variant">
+              Confirm your pre-flight audit checklist to unlock zero lock-in standalone ZIP download.
             </p>
 
             <div className="space-y-3">
-              <label className="flex items-center gap-3 p-3 border border-black bg-neutral-50 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={checklist.reviewedCopy}
-                  onChange={(e) => setChecklist({ ...checklist, reviewedCopy: e.target.checked })}
-                  className="w-4 h-4 border-2 border-black accent-black"
-                />
-                <span>Reviewed section copy & factual claims</span>
-              </label>
-
-              <label className="flex items-center gap-3 p-3 border border-black bg-neutral-50 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={checklist.testedForms}
-                  onChange={(e) => setChecklist({ ...checklist, testedForms: e.target.checked })}
-                  className="w-4 h-4 border-2 border-black accent-black"
-                />
-                <span>Tested forms, buttons & mobile navigation</span>
-              </label>
-
-              <label className="flex items-center gap-3 p-3 border border-black bg-neutral-50 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={checklist.checkedMobileView}
-                  onChange={(e) => setChecklist({ ...checklist, checkedMobileView: e.target.checked })}
-                  className="w-4 h-4 border-2 border-black accent-black"
-                />
-                <span>Verified responsive mobile & desktop viewports</span>
-              </label>
-
-              <label className="flex items-center gap-3 p-3 border border-black bg-neutral-50 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={checklist.confirmedSources}
-                  onChange={(e) => setChecklist({ ...checklist, confirmedSources: e.target.checked })}
-                  className="w-4 h-4 border-2 border-black accent-black"
-                />
-                <span>Confirmed evidence sources & research citations</span>
-              </label>
-            </div>
-
-            <div className="flex items-center gap-3 pt-2">
-              <a
-                href={isChecklistComplete ? `/api/download/${siteId}` : '#'}
-                onClick={(e) => {
-                  if (!isChecklistComplete) {
-                    e.preventDefault();
-                    alert('Please complete all checklist items to unlock standalone ZIP export.');
-                  }
-                }}
-                className={`w-full py-3.5 text-center font-bold uppercase tracking-wider flex items-center justify-center gap-2 border-2 border-black ${
-                  isChecklistComplete ? 'bg-black text-white hover:bg-neutral-800' : 'bg-neutral-200 text-neutral-500 cursor-not-allowed'
-                }`}
-              >
-                <Download className="w-4 h-4" />
-                <span>Download Standalone ZIP</span>
-              </a>
+              {[
+                { key: 'reviewedCopy', label: 'Reviewed evidence sources and facts (U2)' },
+                { key: 'testedForms', label: 'Verified interactive form fallback endpoints (U11/U12)' },
+                { key: 'checkedMobileView', label: 'Checked responsive design across mobile/tablet views' },
+                { key: 'confirmedSources', label: 'Confirmed zero unverified claims flag (U3)' },
+              ].map((item) => (
+                <label key={item.key} className="flex items-center gap-3 p-3 bg-md-surface-container rounded-md-sm cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={(checklist as any)[item.key]}
+                    onChange={(e) => setChecklist({ ...checklist, [item.key]: e.target.checked })}
+                    className="w-4 h-4 rounded border-md-outline text-md-primary"
+                  />
+                  <span className="font-medium text-md-on-surface">{item.label}</span>
+                </label>
+              ))}
             </div>
           </div>
-        </div>
-      )}
+          <CardFooter className="justify-end gap-3">
+            <Button variant="ghost" onClick={() => setShowValidationGate(false)}>Cancel</Button>
+            <Button
+              variant="filled"
+              disabled={!Object.values(checklist).every(Boolean)}
+              onClick={handleExportZip}
+              className="font-semibold"
+            >
+              <Download className="w-4 h-4" />
+              <span>Download Standalone ZIP</span>
+            </Button>
+          </CardFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
 
 export default function BuilderPage() {
   return (
-    <Suspense fallback={<div className="p-8 font-mono text-xs">Loading SiteForge Builder...</div>}>
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center text-xs text-md-on-surface-variant">Loading AI Builder...</div>}>
       <BuilderContent />
     </Suspense>
   );

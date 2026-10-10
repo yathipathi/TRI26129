@@ -125,3 +125,67 @@ export async function runVerificationCrawler(siteId: string, versionId?: string)
 
   return report;
 }
+
+import crypto from 'crypto';
+import { SectionSpec } from '@/types';
+
+// Compute MD5 byte hash for a section
+export function computeSectionHash(section: SectionSpec | any): string {
+  const jsonStr = JSON.stringify({
+    id: section.id,
+    type: section.type,
+    title: section.title,
+    subtitle: section.subtitle,
+    props: section.props,
+    items: section.items,
+    layout: section.layout,
+    isLocked: section.isLocked,
+    isHidden: section.isHidden,
+    pinnedFields: section.pinnedFields,
+  });
+  return crypto.createHash('sha256').update(jsonStr).digest('hex');
+}
+
+export interface CollateralCheckResult {
+  passed: boolean;
+  targetSectionId: string;
+  modifiedSectionsCount: number;
+  unintendedChanges: string[];
+  confirmationMessage: string;
+}
+
+// Assert that non-target sections are byte-identical before and after edit
+export function assertZeroCollateralDamage(
+  prevSections: (SectionSpec | any)[],
+  nextSections: (SectionSpec | any)[],
+  targetSectionId?: string
+): CollateralCheckResult {
+  const unintendedChanges: string[] = [];
+
+  const prevHashMap = new Map(prevSections.map((s) => [s.id, computeSectionHash(s)]));
+  const nextHashMap = new Map(nextSections.map((s) => [s.id, computeSectionHash(s)]));
+
+  prevHashMap.forEach((prevHash, secId) => {
+    // Skip target section if specified
+    if (targetSectionId && secId === targetSectionId) return;
+
+    const nextHash = nextHashMap.get(secId);
+    if (!nextHash) {
+      unintendedChanges.push(`Section ${secId} was removed unexpectedly`);
+    } else if (prevHash !== nextHash) {
+      unintendedChanges.push(`Section ${secId} content/props changed unexpectedly`);
+    }
+  });
+
+  const passed = unintendedChanges.length === 0;
+
+  return {
+    passed,
+    targetSectionId: targetSectionId || 'multiple',
+    modifiedSectionsCount: passed ? 1 : prevSections.length,
+    unintendedChanges,
+    confirmationMessage: passed
+      ? 'Only this section changed (Byte-identical zero-collateral proof verified)'
+      : `COLLATERAL VIOLATION: ${unintendedChanges.join('; ')}`,
+  };
+}

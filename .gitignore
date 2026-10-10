@@ -1,0 +1,8 @@
+node_modules
+.next
+out
+build
+data/siteforge_db.json
+generated
+.env
+.env.local

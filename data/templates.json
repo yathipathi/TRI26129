@@ -1,0 +1,170 @@
+[
+  {
+    "slug": "portfolio",
+    "name": "Alex Rivera // Developer Monograph",
+    "category": "portfolio",
+    "description": "High-impact minimalist portfolio featuring project case studies, terminal showcase, experience timeline, and contact form.",
+    "thumbnail": "https://images.unsplash.com/photo-1507238691740-187a5b1d37b8?auto=format&fit=crop&w=800&q=80",
+    "entryFile": "index.html",
+    "features": ["Terminal UI Showcase", "Project Archive", "Interactive Skill Radar", "Contact Form"],
+    "colorPalette": {
+      "primary": "#000000",
+      "secondary": "#ffffff",
+      "accent": "#F97316"
+    }
+  },
+  {
+    "slug": "restaurant",
+    "name": "Trattoria Bella // Italian Dining",
+    "category": "restaurant",
+    "description": "Artisan Italian culinary experience with interactive food menu, table reservation modal, chef recommendations, and reviews.",
+    "thumbnail": "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&w=800&q=80",
+    "entryFile": "index.html",
+    "features": ["Seasonal Menu Tabs", "Online Table Booking", "Chef Specials", "Customer Endorsements"],
+    "colorPalette": {
+      "primary": "#1c1917",
+      "secondary": "#f5f5f4",
+      "accent": "#dc2626"
+    }
+  },
+  {
+    "slug": "law-firm",
+    "name": "Vanguard Law // Defense & Advocacy",
+    "category": "law firm",
+    "description": "Authoritative legal practice website with practice area grid, attorney bios, case results telemetry, and private consult intake.",
+    "thumbnail": "https://images.unsplash.com/photo-1589829545856-d10d557cf95f?auto=format&fit=crop&w=800&q=80",
+    "entryFile": "index.html",
+    "features": ["Practice Areas Matrix", "Case Victory Telemetry", "Attorney Roster", "Confidential Intake"],
+    "colorPalette": {
+      "primary": "#0f172a",
+      "secondary": "#f8fafc",
+      "accent": "#ca8a04"
+    }
+  },
+  {
+    "slug": "clinic",
+    "name": "Aegis Clinical Health & Diagnostics",
+    "category": "clinic",
+    "description": "Modern medical clinic with specialist roster, outpatient appointment booking, health services matrix, and patient portal.",
+    "thumbnail": "https://images.unsplash.com/photo-1629909613654-28e377c37b09?auto=format&fit=crop&w=800&q=80",
+    "entryFile": "index.html",
+    "features": ["Specialist Directory", "Appointment Booking", "Service Matrix", "Emergency Contacts"],
+    "colorPalette": {
+      "primary": "#0c4a6e",
+      "secondary": "#f0f9ff",
+      "accent": "#0284c7"
+    }
+  },
+  {
+    "slug": "ecommerce",
+    "name": "Luxe Artisan // Fashion & Apparel",
+    "category": "ecommerce",
+    "description": "Premium e-commerce store with product grid, interactive cart drawer, seasonal collection highlights, and customer reviews.",
+    "thumbnail": "https://images.unsplash.com/photo-1441986300917-64674bd600d8?auto=format&fit=crop&w=800&q=80",
+    "entryFile": "index.html",
+    "features": ["Product Catalog Grid", "Interactive Shopping Cart", "Collection Banners", "Customer Reviews"],
+    "colorPalette": {
+      "primary": "#18181b",
+      "secondary": "#fafafa",
+      "accent": "#d97706"
+    }
+  },
+  {
+    "slug": "startup-saas",
+    "name": "HyperGrid OS // Cloud Mesh Platform",
+    "category": "startup/SaaS",
+    "description": "High-velocity SaaS platform landing page with hero CTA, feature matrix, pricing tiers, and real-time operations dashboard.",
+    "thumbnail": "https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&w=800&q=80",
+    "entryFile": "index.html",
+    "features": ["Live Metric Telemetry", "Pricing Tiers Matrix", "Interactive Code Snippets", "FAQ Accordion"],
+    "colorPalette": {
+      "primary": "#09090b",
+      "secondary": "#ffffff",
+      "accent": "#6366f1"
+    }
+  },
+  {
+    "slug": "education",
+    "name": "Quantum Code Academy",
+    "category": "education",
+    "description": "Developer learning portal with curriculum syllabus, live cohort schedule, instructor profiles, and enrollment checkout.",
+    "thumbnail": "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&w=800&q=80",
+    "entryFile": "index.html",
+    "features": ["Course Modules Syllabus", "Cohort Schedule", "Student Testimonials", "Enrollment Form"],
+    "colorPalette": {
+      "primary": "#1e1b4b",
+      "secondary": "#f5f3ff",
+      "accent": "#7c3aed"
+    }
+  },
+  {
+    "slug": "real-estate",
+    "name": "Horizon Luxury Estates & Villas",
+    "category": "real estate",
+    "description": "High-end luxury real estate showcase with property filter grid, floorplan gallery, virtual tour booking, and broker contact.",
+    "thumbnail": "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=800&q=80",
+    "entryFile": "index.html",
+    "features": ["Property Filter Grid", "Mortgage Calculator", "Virtual Tour Booking", "Agent Profile"],
+    "colorPalette": {
+      "primary": "#111827",
+      "secondary": "#f9fafb",
+      "accent": "#059669"
+    }
+  },
+  {
+    "slug": "photography",
+    "name": "Luminary Studio // Editorial Photography",
+    "category": "photography",
+    "description": "Minimalist photography showcase with full-bleed lightbox gallery, editorial portfolio, booking rates, and contact desk.",
+    "thumbnail": "https://images.unsplash.com/photo-1452587925148-ce544e77e70d?auto=format&fit=crop&w=800&q=80",
+    "entryFile": "index.html",
+    "features": ["Masonry Image Grid", "Lightbox Viewer", "Commission Rates", "Inquiry Form"],
+    "colorPalette": {
+      "primary": "#050505",
+      "secondary": "#ffffff",
+      "accent": "#71717a"
+    }
+  },
+  {
+    "slug": "ngo",
+    "name": "EcoEarth Foundation // Conservation NGO",
+    "category": "ngo",
+    "description": "Environmental conservation non-profit with impact metrics, active initiative timeline, donation progress, and volunteer signup.",
+    "thumbnail": "https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?auto=format&fit=crop&w=800&q=80",
+    "entryFile": "index.html",
+    "features": ["Impact Counters", "Tree Planting Tracker", "Donation Tiers", "Volunteer Sign Up"],
+    "colorPalette": {
+      "primary": "#064e3b",
+      "secondary": "#ecfdf5",
+      "accent": "#10b981"
+    }
+  },
+  {
+    "slug": "agency",
+    "name": "Apex Digital // Creative & Growth Studio",
+    "category": "agency",
+    "description": "Full-service digital agency with client case studies, service offerings, team roster, and project estimator.",
+    "thumbnail": "https://images.unsplash.com/photo-1522071820081-009f0129c71c?auto=format&fit=crop&w=800&q=80",
+    "entryFile": "index.html",
+    "features": ["Interactive Case Studies", "Services Accordion", "Client Logos Grid", "Project Estimator"],
+    "colorPalette": {
+      "primary": "#18181b",
+      "secondary": "#fafafa",
+      "accent": "#ec4899"
+    }
+  },
+  {
+    "slug": "blog",
+    "name": "Tech Dispatches // Engineering Research Journal",
+    "category": "blog",
+    "description": "High-density technical blog and research journal with categorized dispatches, reading metrics, and newsletter subscription.",
+    "thumbnail": "https://images.unsplash.com/photo-1499750310107-5fef28a66643?auto=format&fit=crop&w=800&q=80",
+    "entryFile": "index.html",
+    "features": ["Categorized Articles", "Reading Time Metrics", "Newsletter Signup", "Author Bio"],
+    "colorPalette": {
+      "primary": "#0f172a",
+      "secondary": "#ffffff",
+      "accent": "#2563eb"
+    }
+  }
+]

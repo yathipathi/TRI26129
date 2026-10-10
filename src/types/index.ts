@@ -56,7 +56,17 @@ export interface SectionSpec {
   title: string;
   subtitle?: string;
   badge?: string;
+  variant?: string;
+  rationale?: string;
+  isLocked?: boolean;
+  isHidden?: boolean;
+  pinnedFields?: string[];
   props: Record<string, any>;
+  style?: {
+    paddingY?: string;
+    background?: string;
+    animation?: string;
+  };
   sources?: SourceCitation[];
   flags?: ClaimFlag[];
 }
@@ -279,3 +289,45 @@ export interface ChatMessage {
   steps?: any[];
   suggestedActions?: string[];
 }
+
+export type OperationType =
+  | 'UPDATE_SECTION_PROPS'
+  | 'ADD_SECTION'
+  | 'DELETE_SECTION'
+  | 'REORDER_SECTIONS'
+  | 'DUPLICATE_SECTION'
+  | 'TOGGLE_SECTION_LOCK'
+  | 'TOGGLE_SECTION_HIDE'
+  | 'UPDATE_THEME'
+  | 'UPDATE_PAGE_SEO'
+  | 'ADD_PAGE'
+  | 'DELETE_PAGE'
+  | 'REORDER_PAGES';
+
+export interface EditorCommand {
+  id: string;
+  type: OperationType;
+  description: string;
+  timestamp: number;
+  doState: SiteSpec;
+  undoState: SiteSpec;
+}
+
+export type AIEditScope = 'section' | 'page' | 'site';
+
+export interface AIProposal {
+  id: string;
+  scope: AIEditScope;
+  targetSectionId?: string;
+  prompt: string;
+  explanation: string;
+  proposedSpec: SiteSpec;
+  diffSummary: {
+    sectionId: string;
+    sectionTitle: string;
+    beforeProps: Record<string, any>;
+    afterProps: Record<string, any>;
+  }[];
+  skippedPinnedFields: string[];
+}
+

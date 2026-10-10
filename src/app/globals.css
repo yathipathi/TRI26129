@@ -167,3 +167,41 @@ body {
 .m3-transition {
   transition: all 0.2s cubic-bezier(0.2, 0, 0, 1);
 }
+
+/* Print CSS for Student Study Materials */
+@media print {
+  body {
+    background-color: #ffffff !important;
+    color: #000000 !important;
+    font-size: 12pt;
+  }
+
+  header, footer, nav, button, .no-print {
+    display: none !important;
+  }
+
+  section {
+    page-break-inside: avoid;
+    border: 1px solid #cccccc !important;
+    margin-bottom: 1.5rem !important;
+    padding: 1rem !important;
+    background: white !important;
+  }
+
+  .perspective-1000 {
+    perspective: none !important;
+    height: auto !important;
+  }
+
+  .transform-style-3d {
+    transform: none !important;
+  }
+
+  .rotate-y-180 {
+    transform: none !important;
+  }
+
+  a[href]:after {
+    content: " (" attr(href) ")";
+  }
+}

@@ -17,6 +17,14 @@ import { CTASection } from './CTASection';
 import { FooterSection } from './FooterSection';
 import { ContactSection } from './ContactSection';
 import { 
+  FlashcardsSection,
+  QuizSection,
+  GlossarySection,
+  TimelineSection,
+  ConceptMapSection,
+  BibliographySection
+} from './StudentSections';
+import { 
   ArrowUp, ArrowDown, Sparkles, Trash2, Edit3, Copy, Plus
 } from 'lucide-react';
 
@@ -89,6 +97,18 @@ export const DynamicSectionRenderer: React.FC<DynamicSectionRendererProps> = ({
         return <FooterSection {...props} />;
       case 'contact':
         return <ContactSection {...props} />;
+      case 'flashcards':
+        return <FlashcardsSection {...props} />;
+      case 'quiz':
+        return <QuizSection {...props} />;
+      case 'glossary':
+        return <GlossarySection {...props} />;
+      case 'timeline':
+        return <TimelineSection {...props} />;
+      case 'concept-map':
+        return <ConceptMapSection {...props} />;
+      case 'bibliography':
+        return <BibliographySection {...props} />;
       default:
         return (
           <div className="py-12 px-6 border-b-2 border-black bg-white text-center">

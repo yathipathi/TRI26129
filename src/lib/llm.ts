@@ -4,10 +4,59 @@ export interface LLMMessage {
 }
 
 export async function callLLM(messages: LLMMessage[], options: { temperature?: number; jsonMode?: boolean } = {}): Promise<string> {
+  const geminiKey = process.env.GEMINI_API_KEY;
   const groqKey = process.env.GROQ_API_KEY;
   const openRouterKey = process.env.OPENROUTER_API_KEY;
 
-  // 1. Primary: Groq free tier (llama-3.3-70b-versatile)
+  // 1. PRIMARY: Google Gemini API (gemini-2.0-flash / gemini-1.5-flash)
+  if (geminiKey && geminiKey.trim().length > 0) {
+    try {
+      const systemInstruction = messages.find((m) => m.role === 'system')?.content;
+      const conversationContents = messages
+        .filter((m) => m.role !== 'system')
+        .map((m) => ({
+          role: m.role === 'assistant' ? 'model' : 'user',
+          parts: [{ text: m.content }],
+        }));
+
+      // If no user/assistant messages, use system prompt as single user text
+      if (conversationContents.length === 0 && systemInstruction) {
+        conversationContents.push({
+          role: 'user',
+          parts: [{ text: systemInstruction }],
+        });
+      }
+
+      const geminiModel = 'gemini-2.0-flash';
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/${geminiModel}:generateContent?key=${geminiKey.trim()}`;
+
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ...(systemInstruction ? { systemInstruction: { parts: [{ text: systemInstruction }] } } : {}),
+          contents: conversationContents,
+          generationConfig: {
+            temperature: options.temperature ?? 0.7,
+            ...(options.jsonMode ? { responseMimeType: 'application/json' } : {}),
+          },
+        }),
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+        if (text) return text;
+      } else {
+        const errText = await res.text();
+        console.warn(`[LLM] Gemini API returned status ${res.status}: ${errText.slice(0, 100)}, trying fallback...`);
+      }
+    } catch (err) {
+      console.warn('[LLM] Gemini API call failed:', err);
+    }
+  }
+
+  // 2. SECONDARY FALLBACK: Groq API (llama-3.3-70b-versatile)
   if (groqKey && groqKey.trim().length > 0) {
     try {
       const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
@@ -36,12 +85,12 @@ export async function callLLM(messages: LLMMessage[], options: { temperature?: n
     }
   }
 
-  // 2. Fallback: OpenRouter free models
+  // 3. TERTIARY FALLBACK: OpenRouter free models
   if (openRouterKey && openRouterKey.trim().length > 0) {
     const freeModels = [
+      'google/gemini-2.0-flash-lite-preview-02-05:free',
       'meta-llama/llama-3.3-70b-instruct:free',
       'mistralai/mistral-7b-instruct:free',
-      'google/gemini-2.0-flash-lite-preview-02-05:free',
     ];
 
     for (const model of freeModels) {
@@ -52,7 +101,7 @@ export async function callLLM(messages: LLMMessage[], options: { temperature?: n
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${openRouterKey.trim()}`,
             'HTTP-Referer': 'http://localhost:3000',
-            'X-Title': 'AI Website Builder',
+            'X-Title': 'SiteForge AI Website Builder',
           },
           body: JSON.stringify({
             model,
@@ -72,8 +121,8 @@ export async function callLLM(messages: LLMMessage[], options: { temperature?: n
     }
   }
 
-  // 3. Fallback: Local Deterministic AI Website Code Generator
-  console.log('[LLM] No active API keys or LLM response received, utilizing AI compiler fallback.');
+  // 4. DETERMINISTIC FALLBACK: Local AI Compiler
+  console.log('[LLM] No active LLM response received, utilizing local AI compiler fallback.');
   const lastUserMsg = messages.filter((m) => m.role === 'user').pop()?.content || '';
   
   if (options.jsonMode) {

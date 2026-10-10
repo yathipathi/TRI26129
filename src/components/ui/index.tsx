@@ -162,13 +162,16 @@ export function Tabs({ defaultValue, children, className = '' }: { defaultValue:
 export function TabsList({ children, className = '' }: CardProps) {
   return <div className={`flex bg-md-surface-container-low p-1 rounded-md-lg border border-md-outline-variant/40 gap-1 ${className}`}>{children}</div>;
 }
-export function TabsTrigger({ value, children, className = '' }: { value: string; children: React.ReactNode; className?: string }) {
+export function TabsTrigger({ value, children, onClick, className = '' }: { value: string; children: React.ReactNode; onClick?: () => void; className?: string }) {
   const { active, setActive } = useContext(TabsContext);
   const isSelected = active === value;
   return (
     <button
       type="button"
-      onClick={() => setActive(value)}
+      onClick={() => {
+        setActive(value);
+        if (onClick) onClick();
+      }}
       className={`flex-1 px-4 py-2 text-xs font-medium rounded-md-md m3-transition cursor-pointer text-center ${
         isSelected
           ? 'bg-md-surface text-md-primary shadow-md-1 font-semibold'

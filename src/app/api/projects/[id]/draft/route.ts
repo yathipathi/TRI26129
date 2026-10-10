@@ -22,9 +22,9 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
     const project = getProjectById(id, userId);
     if (!project) return NextResponse.json({ error: 'Project not found' }, { status: 404 });
 
-    const versions = getVersionsForProject(id, userId);
+    const versions = getVersionsForProject(id);
     const latestVersion = versions[0];
-    const spec = latestVersion?.spec || {
+    const spec = latestVersion?.siteSpec || latestVersion?.spec || {
       meta: { siteId: id, siteName: project.name, siteType: project.type, goal: '', audience: '', tone: '', language: 'English' },
       theme: { palette: { primary: '#09090b', secondary: '#ffffff', accent: '#f97316', background: '#ffffff', text: '#000000' }, fonts: { sans: 'Inter', mono: 'JetBrains Mono' }, radius: '0.25rem' },
       pages: [

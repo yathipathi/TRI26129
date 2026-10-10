@@ -46,21 +46,21 @@ export default function AIProposalModal({ proposal, onAccept, onReject }: AIProp
           <div className="font-bold uppercase text-xs">Proposed Changes Diff</div>
 
           <div className="space-y-3">
-            {proposal.diffSummary.map((diff, idx) => (
+            {(proposal?.diffs || proposal?.diffSummary || []).map((diff: any, idx: number) => (
               <div key={idx} className="border-2 border-black p-3 bg-white space-y-2">
                 <div className="font-bold uppercase text-black border-b border-black pb-1">
-                  Section: {diff.sectionTitle} [{diff.sectionId}]
+                  Field / Section: {diff.field || diff.sectionTitle || diff.sectionId || `Item #${idx + 1}`}
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-[11px]">
                   <div className="p-2 border border-red-300 bg-red-50 text-red-900 space-y-1 overflow-x-auto">
                     <div className="font-bold uppercase text-[9px] text-red-700">Before</div>
-                    <pre className="whitespace-pre-wrap">{JSON.stringify(diff.beforeProps, null, 2)}</pre>
+                    <pre className="whitespace-pre-wrap">{JSON.stringify(diff.before ?? diff.beforeProps ?? '', null, 2)}</pre>
                   </div>
 
                   <div className="p-2 border border-emerald-300 bg-emerald-50 text-emerald-900 space-y-1 overflow-x-auto">
                     <div className="font-bold uppercase text-[9px] text-emerald-700">After (Proposed)</div>
-                    <pre className="whitespace-pre-wrap">{JSON.stringify(diff.afterProps, null, 2)}</pre>
+                    <pre className="whitespace-pre-wrap">{JSON.stringify(diff.after ?? diff.afterProps ?? '', null, 2)}</pre>
                   </div>
                 </div>
               </div>

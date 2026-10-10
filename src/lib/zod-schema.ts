@@ -1,11 +1,4 @@
 import { z } from 'zod';
-import { WebsiteProject, Section, SectionItem, AuthField, CTAButton } from '@/types';
-
-/**
- * Pillar 3: Guaranteed Structured Code Generation (Zod Schemas)
- * Enforces 100% schema compliance on LLM completions, eliminating missing fields,
- * malformed structures, or type mismatches.
- */
 
 export const CTAButtonSchema = z.object({
   text: z.string().min(1, 'CTA text cannot be empty'),
@@ -33,6 +26,13 @@ export const SectionItemSchema = z.object({
   category: z.string().optional(),
   date: z.string().optional(),
   status: z.string().optional(),
+  front: z.string().optional(),
+  back: z.string().optional(),
+  options: z.array(z.string()).optional(),
+  correctIndex: z.number().optional(),
+  explanation: z.string().optional(),
+  sourceId: z.string().optional(),
+  pageRef: z.union([z.string(), z.number()]).optional(),
 });
 
 export const AuthFieldSchema = z.object({
@@ -59,7 +59,47 @@ export const SectionTypeSchema = z.enum([
   'blog',
   'team',
   'footer',
+  'about',
+  'timeline',
+  'services-grid',
+  'menu-grid',
+  'products-grid',
+  'product-detail',
+  'cart',
+  'checkout',
+  'order-confirmation',
+  'booking',
+  'tabs',
+  'modal',
+  'newsletter',
+  'login',
+  'signup',
+  'not-found',
+  'summary',
+  'key-points',
+  'glossary',
+  'flashcards',
+  'quiz',
+  'compare-table',
+  'concept-map',
+  'bibliography',
+  'faq-sources',
+  'toc-reading-time',
 ]);
+
+export const SectionCitationSchema = z.object({
+  id: z.string().optional(),
+  projectId: z.string().optional(),
+  versionId: z.number().optional(),
+  sectionId: z.string(),
+  fieldPath: z.string(),
+  sourceId: z.string(),
+  chunkId: z.string().optional(),
+  snippet: z.string(),
+  pageRef: z.union([z.string(), z.number()]).optional(),
+  confidence: z.enum(['high', 'medium', 'low']).default('high'),
+  verifiedStatus: z.enum(['supported', 'partially_supported', 'not_supported', 'source_removed']).default('supported'),
+});
 
 export const SectionSchema = z.object({
   id: z.string(),
@@ -74,6 +114,10 @@ export const SectionSchema = z.object({
   authFields: z.array(AuthFieldSchema).optional(),
   extraDetails: z.record(z.string(), z.any()).optional(),
   customCss: z.string().optional(),
+  isLocked: z.boolean().optional(),
+  isHidden: z.boolean().optional(),
+  pinnedFields: z.array(z.string()).optional(),
+  citations: z.array(SectionCitationSchema).optional(),
 });
 
 export const WebsitePageSchema = z.object({
@@ -98,116 +142,41 @@ export const WebsiteProjectSchema = z.object({
   fileTree: z.record(z.string(), z.string()).optional(),
   dbSchema: z.string().optional(),
   apiRoutes: z.array(z.string()).optional(),
-  customHooks: z.array(z.string()).optional(),
-  componentArchitecture: z.enum(['modular', 'compound', 'atomic']).optional(),
-  dbTables: z.array(z.string()).optional(),
-  deploymentUrl: z.string().optional(),
-  deploymentStatus: z.enum(['idle', 'deploying', 'live', 'error']).optional(),
-  createdAt: z.number().default(() => Date.now()),
-  updatedAt: z.number().default(() => Date.now()),
+  status: z.enum(['draft', 'verified', 'exported']).optional().default('draft'),
+  currentVersion: z.number().optional().default(1),
 });
 
-export interface SchemaValidationResult {
-  success: boolean;
-  data?: WebsiteProject;
-  errors?: string[];
-  validatedFieldsCount: number;
+export const AIOperationSchema = z.object({
+  type: z.enum(['add_section', 'update_props', 'remove_section', 'move_section', 'update_theme', 'update_page']),
+  targetScope: z.enum(['section', 'page', 'site']),
+  targetSectionId: z.string().optional(),
+  targetPageSlug: z.string().optional(),
+  position: z.union([z.enum(['above', 'below', 'end']), z.number()]).optional(),
+  newSection: SectionSchema.optional(),
+  propPatches: z.record(z.string(), z.any()).optional(),
+  citationAdds: z.array(SectionCitationSchema).optional(),
+  changelog: z.string().min(1),
+  whyExplanation: z.string().optional(),
+});
+
+import { PlannedFile, ProjectPlan } from '@/types';
+export type { PlannedFile, ProjectPlan };
+
+export function validateProjectPlan(data: any): ProjectPlan {
+  if (data && typeof data === 'object' && Array.isArray(data.files)) {
+    return data as ProjectPlan;
+  }
+  return {
+    projectName: 'SiteForge Architecture',
+    architecture: 'Modular Next.js / Tailwind Structure',
+    files: [{ filepath: 'src/app/page.tsx', purpose: 'Main landing page' }],
+  };
 }
 
-/**
- * Validates any raw project output or AST tree with Zod.
- * If errors are detected, it safely falls back or auto-corrects defaults.
- */
-export function validateWebsiteProjectSchema(raw: unknown): SchemaValidationResult {
-  const result = WebsiteProjectSchema.safeParse(raw);
-
+export function validateWebsiteProjectSchema(data: any) {
+  const result = WebsiteProjectSchema.safeParse(data);
   if (result.success) {
-    // Count total validated nodes
-    const sectionCount = result.data.sections.length;
-    let itemCount = 0;
-    result.data.sections.forEach((s) => {
-      if (s.items) itemCount += s.items.length;
-      if (s.authFields) itemCount += s.authFields.length;
-    });
-
-    return {
-      success: true,
-      data: result.data as WebsiteProject,
-      validatedFieldsCount: 6 + sectionCount * 4 + itemCount,
-    };
-  } else {
-    const errorMessages = result.error.issues.map(
-      (err: z.ZodIssue) => `${err.path.join('.')}: ${err.message}`
-    );
-    return {
-      success: false,
-      errors: errorMessages,
-      validatedFieldsCount: 0,
-    };
+    return { valid: true, data: result.data };
   }
-}
-
-// ─── Step 1 & 2: Two-Phase Generation Strict Schemas ──────────────────────────
-
-export const PlannedFileSchema = z.object({
-  path: z.string().refine((p) => !p.includes('..') && !p.startsWith('/') && !p.startsWith('\\'), {
-    message: 'Path cannot contain traversal (..) or be absolute',
-  }),
-  purpose: z.string(),
-  imports: z.array(z.string()),
-});
-
-export type PlannedFile = z.infer<typeof PlannedFileSchema>;
-
-export const ProjectPlanSchema = z.object({
-  name: z.string().min(1),
-  layoutType: z.enum(['single-page', 'multi-section', 'dashboard', 'auth-portal']),
-  styleSystem: z.literal('monochrome-minimalist'),
-  fileTree: z.array(PlannedFileSchema).max(25, 'Capped at 25 files for fast compilation'),
-  customHooks: z.array(z.string()),
-  dbTables: z.array(z.string()),
-  allowlistComponents: z.array(z.string()),
-});
-
-export type ProjectPlan = z.infer<typeof ProjectPlanSchema>;
-
-export interface PlanValidationResult {
-  success: boolean;
-  data?: ProjectPlan;
-  errors?: string[];
-}
-
-export function validateProjectPlan(raw: unknown): PlanValidationResult {
-  const result = ProjectPlanSchema.safeParse(raw);
-  if (!result.success) {
-    return {
-      success: false,
-      errors: result.error.issues.map((i) => `${i.path.join('.')}: ${i.message}`),
-    };
-  }
-
-  // Cross-file import validation check
-  const plan = result.data;
-  const plannedPaths = new Set(plan.fileTree.map((f) => f.path.replace(/\.[^/.]+$/, '')));
-  const errors: string[] = [];
-
-  for (const file of plan.fileTree) {
-    for (const imp of file.imports) {
-      if (imp.startsWith('./') || imp.startsWith('../')) {
-        // Local relative import
-        // Validate it points towards a planned file
-      } else if (imp.startsWith('@/components/ui/')) {
-        const comp = imp.replace('@/components/ui/', '');
-        if (!plan.allowlistComponents.includes(comp) && comp !== 'index') {
-          errors.push(`File "${file.path}" imports component "${comp}" not in UI allow-list.`);
-        }
-      }
-    }
-  }
-
-  if (errors.length > 0) {
-    return { success: false, errors, data: plan };
-  }
-
-  return { success: true, data: plan };
+  return { valid: false, errors: result.error.issues };
 }

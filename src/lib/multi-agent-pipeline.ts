@@ -210,7 +210,7 @@ export function Hero() {
   return (
     <header className="border-b-2 border-black py-20 px-6 sm:px-12 bg-white">
       <div className="max-w-4xl mx-auto space-y-6">
-        <Badge>${baseProject.industry.toUpperCase()}</Badge>
+        <Badge>${(baseProject.industry || 'General').toUpperCase()}</Badge>
         <h1 className="text-4xl sm:text-6xl font-black uppercase tracking-tight text-black leading-none">
           ${baseProject.title}
         </h1>

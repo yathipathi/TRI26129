@@ -29,7 +29,30 @@ export type SectionType =
   | 'newsletter'
   | 'login'
   | 'signup'
-  | 'not-found';
+  | 'not-found'
+  /* Student & Knowledge Components */
+  | 'summary'
+  | 'key-points'
+  | 'glossary'
+  | 'flashcards'
+  | 'quiz'
+  | 'compare-table'
+  | 'concept-map'
+  | 'bibliography'
+  | 'faq-sources'
+  | 'toc-reading-time';
+
+export type ViewportMode = 'desktop' | 'tablet' | 'mobile';
+
+export interface User {
+  id: string;
+  email: string;
+  name: string;
+  passwordHash?: string;
+  resetToken?: string;
+  resetTokenExpiry?: number;
+  createdAt: number;
+}
 
 export interface CTAButton {
   text: string;
@@ -46,8 +69,26 @@ export interface ClaimFlag {
 
 export interface SourceCitation {
   title: string;
-  url: string;
+  url?: string;
+  sourceId?: string;
+  chunkId?: string;
+  pageRef?: string | number;
   snippet?: string;
+  confidence?: 'high' | 'medium' | 'low';
+}
+
+export interface SectionCitation {
+  id?: string;
+  projectId?: string;
+  versionId?: number;
+  sectionId: string;
+  fieldPath: string;
+  sourceId: string;
+  chunkId?: string;
+  snippet: string;
+  pageRef?: string | number;
+  confidence: 'high' | 'medium' | 'low';
+  verifiedStatus: 'supported' | 'partially_supported' | 'not_supported' | 'source_removed';
 }
 
 export interface SectionSpec {
@@ -68,11 +109,12 @@ export interface SectionSpec {
     animation?: string;
   };
   sources?: SourceCitation[];
+  citations?: SectionCitation[];
   flags?: ClaimFlag[];
 }
 
 export interface PageSpec {
-  slug: string; // 'index.html', 'about.html', 'services.html', 'contact.html', etc.
+  slug: string;
   title: string;
   seo: {
     metaTitle: string;
@@ -98,115 +140,21 @@ export interface ThemeSpec {
 
 export interface SiteSpec {
   meta: {
-    siteId: string;
-    siteName: string;
-    siteType: string;
-    goal: string;
-    audience: string;
-    location?: string;
-    tone: string;
-    language: string;
-    templateSlug?: string;
+    id: string;
+    name: string;
+    siteName?: string;
+    siteType?: string;
+    description: string;
+    version: number;
+    createdAt: number;
+    updatedAt: number;
+    groundingStrict?: boolean;
+    webResearchAllowed?: boolean;
   };
   theme: ThemeSpec;
   pages: PageSpec[];
-  nav: {
-    brandName: string;
-    links: { label: string; href: string }[];
-    ctaPrimary?: CTAButton;
-    ctaSecondary?: CTAButton;
-  };
-  footer: {
-    brandName: string;
-    copyright: string;
-    links: { label: string; href: string }[];
-  };
-  data: {
-    products?: any[];
-    menu?: any[];
-    services?: any[];
-    posts?: any[];
-    team?: any[];
-    testimonials?: any[];
-    faqs?: any[];
-  };
 }
 
-export interface User {
-  id: string;
-  email: string;
-  name: string;
-  passwordHash?: string;
-  resetToken?: string;
-  resetTokenExp?: number;
-  createdAt: number;
-}
-
-export interface Project {
-  id: string;
-  userId: string;
-  name: string;
-  type: string;
-  status: 'draft' | 'verified' | 'exported';
-  currentVersion: number;
-  createdAt: number;
-  updatedAt: number;
-}
-
-export interface Version {
-  id: string;
-  projectId: string;
-  versionNumber: number;
-  spec: SiteSpec;
-  label: string;
-  createdBy: string;
-  createdAt: number;
-}
-
-export interface VerificationReport {
-  versionId: string;
-  totalTested: number;
-  passedCount: number;
-  failedCount: number;
-  pagesTested: string[];
-  deadLinks: string[];
-  consoleErrors: string[];
-  status: 'PASS' | 'FAIL';
-  screenshots: string[];
-  timestamp: number;
-}
-
-export interface SecurityReport {
-  versionId: string;
-  cspInjected: boolean;
-  noInlineEvents: boolean;
-  staticOutputChecked: boolean;
-  findings: {
-    severity: 'HIGH' | 'MED' | 'LOW';
-    title: string;
-    description: string;
-  }[];
-  timestamp: number;
-}
-
-export interface FormSubmission {
-  id: string;
-  projectId: string;
-  formName: string;
-  data: Record<string, any>;
-  createdAt: number;
-}
-
-export interface EventLog {
-  id: string;
-  userId: string;
-  projectId?: string;
-  type: string;
-  metadata?: Record<string, any>;
-  createdAt: number;
-}
-
-// Deprecated legacy types for backwards compatibility
 export interface SectionItem {
   id: string;
   title?: string;
@@ -227,13 +175,22 @@ export interface SectionItem {
   category?: string;
   date?: string;
   status?: string;
+  front?: string;
+  back?: string;
+  options?: string[];
+  correctIndex?: number;
+  explanation?: string;
+  sourceId?: string;
+  pageRef?: string | number;
 }
+
+export type LegacySectionItem = SectionItem;
 
 export interface AuthField {
   id: string;
   label: string;
   type: string;
-  placeholder: string;
+  placeholder?: string;
   required?: boolean;
 }
 
@@ -250,6 +207,11 @@ export interface Section {
   authFields?: AuthField[];
   extraDetails?: Record<string, any>;
   customCss?: string;
+  isLocked?: boolean;
+  isHidden?: boolean;
+  pinnedFields?: string[];
+  sources?: SourceCitation[];
+  citations?: SectionCitation[];
 }
 
 export interface WebsitePage {
@@ -265,69 +227,227 @@ export interface WebsiteProject {
   id: string;
   title: string;
   description: string;
-  prompt: string;
-  industry: string;
-  tone: string;
+  prompt?: string;
+  industry?: string;
+  tone?: string;
   pages?: WebsitePage[];
   activePageSlug?: string;
   sections: Section[];
   fileTree?: Record<string, string>;
-  customHooks?: any[];
+  dbSchema?: string;
+  apiRoutes?: string[];
+  customHooks?: Record<string, string>;
   componentArchitecture?: any;
-  dbTables?: any[];
+  dbTables?: any;
+  status?: 'draft' | 'verified' | 'exported';
+  currentVersion?: number;
+  siteName?: string;
+  siteType?: string;
+  createdAt?: number;
+  updatedAt?: number;
+  userId?: string;
+  isDeleted?: boolean;
+}
+
+export interface Project {
+  id: string;
+  userId: string;
+  name: string;
+  type: string;
+  status: 'draft' | 'verified' | 'exported';
+  currentVersion: number;
+  siteSpec: SiteSpec | WebsiteProject;
+  fileTree?: Record<string, string>;
   createdAt: number;
   updatedAt: number;
+  isDeleted?: boolean;
+  deletedAt?: number;
 }
 
-export type ViewportMode = 'desktop' | 'tablet' | 'mobile';
-
-export interface ChatMessage {
+export interface Version {
   id: string;
-  role: 'user' | 'assistant' | 'system';
-  content: string;
-  timestamp: number;
-  steps?: any[];
-  suggestedActions?: string[];
+  projectId: string;
+  versionNumber: number;
+  label: string;
+  siteSpec: SiteSpec | WebsiteProject;
+  spec?: SiteSpec | WebsiteProject;
+  changelog?: string;
+  createdAt: number;
 }
 
-export type OperationType =
-  | 'UPDATE_SECTION_PROPS'
-  | 'ADD_SECTION'
-  | 'DELETE_SECTION'
-  | 'REORDER_SECTIONS'
-  | 'DUPLICATE_SECTION'
-  | 'TOGGLE_SECTION_LOCK'
-  | 'TOGGLE_SECTION_HIDE'
-  | 'UPDATE_THEME'
-  | 'UPDATE_PAGE_SEO'
-  | 'ADD_PAGE'
-  | 'DELETE_PAGE'
-  | 'REORDER_PAGES';
+export interface VerificationReport {
+  projectId: string;
+  versionId?: number | string;
+  status: 'PASS' | 'FAIL';
+  passedCount: number;
+  failedCount: number;
+  totalTested: number;
+  pagesTested: string[];
+  deadLinks: string[];
+  consoleErrors: string[];
+  screenshots?: any[];
+  timestamp?: number;
+  createdAt: number;
+}
+
+export interface SecurityReport {
+  projectId: string;
+  status: 'SAFE' | 'WARNING';
+  checkedRules: string[];
+  vulnerabilities: string[];
+  createdAt: number;
+}
+
+export interface FormSubmission {
+  id: string;
+  projectId: string;
+  formType: string;
+  name?: string;
+  email?: string;
+  message?: string;
+  data: Record<string, any>;
+  createdAt: number;
+}
+
+export interface EventLog {
+  id: string;
+  userId: string;
+  projectId?: string;
+  type: string;
+  metadata?: any;
+  createdAt: number;
+}
 
 export interface EditorCommand {
   id: string;
-  type: OperationType;
+  type?: string;
   description: string;
   timestamp: number;
-  doState: SiteSpec;
-  undoState: SiteSpec;
+  prevSpec?: any;
+  nextSpec?: any;
+  undoState?: any;
+  doState?: any;
+}
+
+export interface AIProposal {
+  id: string;
+  scope: 'section' | 'page' | 'site';
+  instruction: string;
+  prompt?: string;
+  targetSectionId?: string;
+  diffs?: any[];
+  diffSummary?: any[];
+  proposedSpec: any;
+  changelog: string;
+  explanation?: string;
+  whyExplanation?: string;
+  skippedPinnedFields?: string[];
 }
 
 export type AIEditScope = 'section' | 'page' | 'site';
 
-export interface AIProposal {
+export interface ChatMessage {
   id: string;
-  scope: AIEditScope;
-  targetSectionId?: string;
-  prompt: string;
-  explanation: string;
-  proposedSpec: SiteSpec;
-  diffSummary: {
-    sectionId: string;
-    sectionTitle: string;
-    beforeProps: Record<string, any>;
-    afterProps: Record<string, any>;
-  }[];
-  skippedPinnedFields: string[];
+  sender?: any;
+  role?: any;
+  text?: string;
+  content?: string;
+  timestamp: number;
+  proposal?: AIProposal;
+  steps?: any[];
+  suggestedActions?: any[];
 }
 
+export interface PlannedFile {
+  path?: string;
+  filepath?: string;
+  purpose?: string;
+  description?: string;
+  imports?: string[];
+}
+
+export interface ProjectPlan {
+  name?: string;
+  projectName?: string;
+  architecture?: string;
+  layoutType?: string;
+  styleSystem?: string;
+  files?: PlannedFile[];
+  fileTree?: any;
+  allowlistComponents?: any;
+  success?: boolean;
+  errors?: string[];
+  customHooks?: any;
+  dbTables?: any;
+}
+
+/* Knowledge Library Types */
+export type SourceFileType = 'pdf' | 'docx' | 'txt' | 'md' | 'html' | 'pptx' | 'image' | 'url' | 'text';
+
+export interface SourceItem {
+  id: string;
+  userId: string;
+  projectId?: string | null;
+  title: string;
+  authors?: string[];
+  year?: number | string;
+  type: SourceFileType;
+  language?: string;
+  url?: string;
+  filePath?: string;
+  hash: string;
+  status: 'processing' | 'ready' | 'error' | 'source_removed';
+  publicFlag?: boolean;
+  citationJson?: {
+    apa?: string;
+    mla?: string;
+    ieee?: string;
+    harvard?: string;
+  };
+  summary?: string;
+  keyTerms?: string[];
+  tags?: string[];
+  createdAt: number;
+  updatedAt: number;
+  usedInSections?: string[];
+}
+
+export interface SourceChunk {
+  id: string;
+  sourceId: string;
+  idx: number;
+  text: string;
+  pageRef?: string | number;
+  embedding?: number[];
+  tokenCount: number;
+}
+
+export interface IngestionJob {
+  id: string;
+  sourceId: string;
+  status: 'pending' | 'processing' | 'completed' | 'failed';
+  progress: number;
+  error?: string;
+  createdAt: number;
+}
+
+export type AIOperationType = 
+  | 'add_section'
+  | 'update_props'
+  | 'remove_section'
+  | 'move_section'
+  | 'update_theme'
+  | 'update_page';
+
+export interface AIOperation {
+  type: AIOperationType;
+  targetScope: 'section' | 'page' | 'site';
+  targetSectionId?: string;
+  targetPageSlug?: string;
+  position?: 'above' | 'below' | 'end' | number;
+  newSection?: SectionSpec | Section;
+  propPatches?: Record<string, any>;
+  citationAdds?: SectionCitation[];
+  changelog: string;
+  whyExplanation?: string;
+}

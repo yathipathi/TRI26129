@@ -25,7 +25,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
       return NextResponse.json({ error: 'Project not found' }, { status: 404 });
     }
 
-    const versions = getVersionsForProject(id, userId);
+    const versions = getVersionsForProject(id);
     const submissions = getSubmissionsForProject(id);
 
     const latestVersion = versions[0];

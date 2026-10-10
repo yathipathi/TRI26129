@@ -13,6 +13,7 @@ export async function runVerificationCrawler(siteId: string, versionId?: string)
   const siteDir = path.join(process.cwd(), 'generated', siteId);
 
   const report: VerificationReport = {
+    projectId: siteId,
     versionId: targetVersionId,
     totalTested: 0,
     passedCount: 0,
@@ -23,6 +24,7 @@ export async function runVerificationCrawler(siteId: string, versionId?: string)
     status: 'PASS',
     screenshots: [],
     timestamp: Date.now(),
+    createdAt: Date.now(),
   };
 
   if (!fs.existsSync(siteDir)) {

@@ -274,7 +274,7 @@ document.addEventListener('DOMContentLoaded', () => {
       data: {}
     };
 
-    createProject(userId, input.siteName, input.siteType, initialSpec);
+    createProject({ id: siteId, userId, name: input.siteName, type: input.siteType, siteSpec: initialSpec as any });
   } catch (err) {
     console.warn('[PIPELINE] Project registration in DB warning:', err);
   }

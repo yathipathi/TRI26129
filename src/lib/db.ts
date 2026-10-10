@@ -35,7 +35,7 @@ interface DatabaseSchema {
   quotas: UserQuota[];
 }
 
-function ensureDbFile(): DatabaseSchema {
+export function ensureDbFile(): DatabaseSchema {
   const dir = path.dirname(DB_FILE);
   if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
 
@@ -79,7 +79,7 @@ function ensureDbFile(): DatabaseSchema {
   }
 }
 
-function saveDb(db: DatabaseSchema) {
+export function saveDb(db: DatabaseSchema) {
   const dir = path.dirname(DB_FILE);
   if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
   fs.writeFileSync(DB_FILE, JSON.stringify(db, null, 2), 'utf-8');

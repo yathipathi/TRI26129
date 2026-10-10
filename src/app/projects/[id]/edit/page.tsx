@@ -11,7 +11,7 @@ import EditorTopBar from '@/components/editor/EditorTopBar';
 import EditorLeftPane from '@/components/editor/EditorLeftPane';
 import EditorRightPane from '@/components/editor/EditorRightPane';
 import AIProposalModal from '@/components/editor/AIProposalModal';
-import CommandPalette from '@/components/editor/CommandPalette';
+import { CommandPalette } from '@/components/editor/CommandPalette';
 import { HumanValidationModal } from '@/components/validation/HumanValidationModal';
 import { SECTION_REGISTRY } from '@/lib/section-registry';
 import { 

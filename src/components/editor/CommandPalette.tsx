@@ -1,26 +1,27 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import { Search, Sparkles, Layers, FileText, Monitor, Tablet, Smartphone, Command } from 'lucide-react';
-import { SectionSpec } from '@/types';
+import React, { useEffect, useState } from 'react';
+import { Search, Sparkles, Plus, Eye, Edit3, Layers, HelpCircle, X } from 'lucide-react';
 
-interface CommandPaletteProps {
+export interface CommandPaletteProps {
   isOpen: boolean;
   onClose: () => void;
-  sections: SectionSpec[];
-  onSelectSection: (id: string) => void;
-  pages: { slug: string; title: string }[];
-  onSelectPage: (slug: string) => void;
-  onChangeViewport: (v: 'desktop' | 'tablet' | 'mobile') => void;
-  onToggleAIPanel: () => void;
+  onSelectAction?: (action: string, payload?: any) => void;
+  sections?: { id: string; title: string; type: string }[];
+  pages?: { name?: string; title?: string; slug: string }[];
+  onSelectSection?: (id: string) => void;
+  onSelectPage?: (slug: string) => void;
+  onChangeViewport?: (v: 'desktop' | 'tablet' | 'mobile') => void;
+  onToggleAIPanel?: () => void;
 }
 
-export default function CommandPalette({
+export function CommandPalette({
   isOpen,
   onClose,
-  sections,
+  onSelectAction,
+  sections = [],
+  pages = [],
   onSelectSection,
-  pages,
   onSelectPage,
   onChangeViewport,
   onToggleAIPanel,
@@ -29,99 +30,121 @@ export default function CommandPalette({
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
         e.preventDefault();
         if (isOpen) onClose();
-        else setQuery('');
-      }
-      if (e.key === 'Escape' && isOpen) {
+        else onSelectAction?.('open_palette');
+      } else if (e.key === 'Escape' && isOpen) {
         onClose();
       }
     };
+
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isOpen, onClose]);
+  }, [isOpen, onClose, onSelectAction]);
 
   if (!isOpen) return null;
 
+  const actions = [
+    { id: 'mode_edit', label: 'Switch to Edit Mode', icon: <Edit3 className="w-4 h-4 text-primary" /> },
+    { id: 'mode_interact', label: 'Switch to Interact Mode', icon: <Eye className="w-4 h-4 text-emerald-500" /> },
+    { id: 'add_section', label: 'Add New Section from Library', icon: <Plus className="w-4 h-4 text-purple-500" /> },
+    { id: 'ai_edit', label: 'Run AI Quick Edit', icon: <Sparkles className="w-4 h-4 text-amber-500" /> },
+    { id: 'save_version', label: 'Save Version Checkpoint', icon: <Layers className="w-4 h-4 text-blue-500" /> },
+    { id: 'shortcuts', label: 'Open Keyboard Shortcuts (?)', icon: <HelpCircle className="w-4 h-4 text-muted-foreground" /> },
+  ];
+
+  const filteredActions = actions.filter((a) => a.label.toLowerCase().includes(query.toLowerCase()));
+  const filteredSections = sections.filter((s) => (s.title || s.id).toLowerCase().includes(query.toLowerCase()));
+  const filteredPages = pages.filter((p) => ((p.name || p.title) || '').toLowerCase().includes(query.toLowerCase()));
+
+  const handleActionClick = (id: string) => {
+    if (id === 'ai_edit') onToggleAIPanel?.();
+    if (onSelectAction) onSelectAction(id);
+    onClose();
+  };
+
+  const handleSectionClick = (id: string) => {
+    if (onSelectSection) onSelectSection(id);
+    else if (onSelectAction) onSelectAction('jump_section', id);
+    onClose();
+  };
+
+  const handlePageClick = (slug: string) => {
+    if (onSelectPage) onSelectPage(slug);
+    else if (onSelectAction) onSelectAction('jump_page', slug);
+    onClose();
+  };
+
   return (
-    <div className="fixed inset-0 z-50 flex items-start justify-center pt-20 p-4 bg-black/60 backdrop-blur-xs font-mono text-xs">
-      <div className="bg-white border-2 border-black max-w-xl w-full p-4 shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] space-y-4">
-        {/* Search Bar */}
-        <div className="flex items-center border-b-2 border-black pb-3 px-2">
-          <Search className="w-4 h-4 text-neutral-500 mr-2" />
+    <div className="fixed inset-0 z-50 flex items-start justify-center pt-20 bg-black/60 backdrop-blur-xs p-4 animate-in fade-in duration-150">
+      <div className="bg-surface surface-container-high border border-outline/20 rounded-2xl w-full max-w-xl shadow-2xl overflow-hidden flex flex-col">
+        {/* Search Header */}
+        <div className="flex items-center px-4 border-b border-outline/10">
+          <Search className="w-4 h-4 text-muted-foreground shrink-0" />
           <input
             type="text"
+            placeholder="Type a command, section name, or search pages (Ctrl + K)..."
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Type a command or search sections/pages... (Esc to exit)"
+            className="w-full px-3 py-3.5 bg-transparent text-sm text-foreground focus:outline-none"
             autoFocus
-            className="w-full text-xs font-mono outline-none bg-transparent"
           />
-          <kbd className="px-2 py-0.5 border border-black bg-neutral-100 text-[10px] font-bold">ESC</kbd>
+          <button onClick={onClose} className="p-1 text-muted-foreground hover:text-foreground">
+            <X className="w-4 h-4" />
+          </button>
         </div>
 
-        {/* Action Commands List */}
-        <div className="space-y-3 max-h-64 overflow-y-auto">
+        {/* Results List */}
+        <div className="max-h-80 overflow-y-auto p-2 space-y-3">
           {/* Quick Actions */}
           <div className="space-y-1">
-            <div className="text-[10px] font-bold uppercase text-neutral-400">QUICK ACTIONS</div>
-            <button
-              onClick={() => {
-                onToggleAIPanel();
-                onClose();
-              }}
-              className="w-full p-2 border border-black hover:bg-black hover:text-white flex items-center justify-between text-left"
-            >
-              <span className="flex items-center gap-2">
-                <Sparkles className="w-3.5 h-3.5 text-orange-500" />
-                <span>Open AI Editing Desk</span>
-              </span>
-              <span className="text-[10px] uppercase font-bold">Command</span>
-            </button>
-          </div>
-
-          {/* Jump to Sections */}
-          <div className="space-y-1 pt-2 border-t border-neutral-200">
-            <div className="text-[10px] font-bold uppercase text-neutral-400">SECTIONS ON PAGE</div>
-            {sections.map((sec) => (
+            <span className="px-3 text-[10px] font-mono uppercase text-muted-foreground font-bold">Quick Commands</span>
+            {filteredActions.map((act) => (
               <button
-                key={sec.id}
-                onClick={() => {
-                  onSelectSection(sec.id);
-                  onClose();
-                }}
-                className="w-full p-2 border border-black hover:bg-neutral-100 flex items-center justify-between text-left"
+                key={act.id}
+                onClick={() => handleActionClick(act.id)}
+                className="w-full text-left px-3 py-2 rounded-xl hover:bg-surface-variant/50 text-xs font-medium text-foreground flex items-center gap-2.5 transition"
               >
-                <span className="flex items-center gap-2">
-                  <Layers className="w-3.5 h-3.5 text-black" />
-                  <span>{sec.title || sec.type} [{sec.id}]</span>
-                </span>
-                <span className="text-[10px] uppercase text-neutral-500">{sec.type}</span>
+                {act.icon}
+                <span>{act.label}</span>
               </button>
             ))}
           </div>
 
-          {/* Switch Pages */}
-          <div className="space-y-1 pt-2 border-t border-neutral-200">
-            <div className="text-[10px] font-bold uppercase text-neutral-400">PAGES</div>
-            {pages.map((p) => (
-              <button
-                key={p.slug}
-                onClick={() => {
-                  onSelectPage(p.slug);
-                  onClose();
-                }}
-                className="w-full p-2 border border-black hover:bg-neutral-100 flex items-center justify-between text-left"
-              >
-                <span className="flex items-center gap-2">
-                  <FileText className="w-3.5 h-3.5 text-blue-600" />
-                  <span>{p.title} ({p.slug})</span>
-                </span>
-                <span className="text-[10px] uppercase text-neutral-500">Switch Page</span>
-              </button>
-            ))}
-          </div>
+          {/* Jump to Section */}
+          {filteredSections.length > 0 && (
+            <div className="space-y-1 pt-1 border-t border-outline/10">
+              <span className="px-3 text-[10px] font-mono uppercase text-muted-foreground font-bold">Jump to Section</span>
+              {filteredSections.map((sec) => (
+                <button
+                  key={sec.id}
+                  onClick={() => handleSectionClick(sec.id)}
+                  className="w-full text-left px-3 py-2 rounded-xl hover:bg-primary/10 text-xs font-medium text-foreground flex items-center justify-between transition"
+                >
+                  <span className="font-semibold">{sec.title || sec.id}</span>
+                  <span className="font-mono text-[11px] text-muted-foreground uppercase">{sec.type}</span>
+                </button>
+              ))}
+            </div>
+          )}
+
+          {/* Jump to Page */}
+          {filteredPages.length > 0 && (
+            <div className="space-y-1 pt-1 border-t border-outline/10">
+              <span className="px-3 text-[10px] font-mono uppercase text-muted-foreground font-bold">Jump to Page</span>
+              {filteredPages.map((pg) => (
+                <button
+                  key={pg.slug}
+                  onClick={() => handlePageClick(pg.slug)}
+                  className="w-full text-left px-3 py-2 rounded-xl hover:bg-primary/10 text-xs font-medium text-foreground flex items-center justify-between transition"
+                >
+                  <span className="font-semibold">{pg.name || pg.title}</span>
+                  <span className="font-mono text-[11px] text-muted-foreground">{pg.slug}</span>
+                </button>
+              ))}
+            </div>
+          )}
         </div>
       </div>
     </div>

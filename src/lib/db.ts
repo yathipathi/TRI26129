@@ -62,18 +62,25 @@ function saveDb(db: DatabaseSchema) {
 }
 
 // -----------------------------------------------------------------------------------------
-// AUTH FUNCTIONS
+// AUTH & USER FUNCTIONS
 // -----------------------------------------------------------------------------------------
 
-export function registerUser(email: string, name: string): User {
+export function registerUser(email: string, name: string, passwordHash?: string): User {
   const db = ensureDbFile();
   const existing = db.users.find((u) => u.email.toLowerCase() === email.toLowerCase());
-  if (existing) return existing;
+  if (existing) {
+    if (passwordHash && !existing.passwordHash) {
+      existing.passwordHash = passwordHash;
+      saveDb(db);
+    }
+    return existing;
+  }
 
   const newUser: User = {
     id: 'usr-' + crypto.randomUUID().substring(0, 8),
-    email,
+    email: email.toLowerCase(),
     name,
+    passwordHash,
     createdAt: Date.now(),
   };
   db.users.push(newUser);
@@ -91,20 +98,43 @@ export function getUserById(userId: string): User | null {
   return db.users.find((u) => u.id === userId) || null;
 }
 
+export function setUserResetToken(email: string, token: string, exp: number): boolean {
+  const db = ensureDbFile();
+  const user = db.users.find((u) => u.email.toLowerCase() === email.toLowerCase());
+  if (!user) return false;
+
+  user.resetToken = token;
+  user.resetTokenExp = exp;
+  saveDb(db);
+  return true;
+}
+
+export function resetPasswordWithToken(token: string, newPasswordHash: string): boolean {
+  const db = ensureDbFile();
+  const user = db.users.find((u) => u.resetToken === token && u.resetTokenExp && Date.now() < u.resetTokenExp);
+  if (!user) return false;
+
+  user.passwordHash = newPasswordHash;
+  delete user.resetToken;
+  delete user.resetTokenExp;
+  saveDb(db);
+  return true;
+}
+
 // -----------------------------------------------------------------------------------------
 // PROJECT & VERSION FUNCTIONS (Row Level Security / User Isolated)
 // -----------------------------------------------------------------------------------------
 
 export function getProjectsForUser(userId: string): Project[] {
   const db = ensureDbFile();
-  return db.projects.filter((p) => p.userId === userId || userId === 'usr-default');
+  return db.projects.filter((p) => p.userId === userId).sort((a, b) => b.updatedAt - a.updatedAt);
 }
 
 export function getProjectById(projectId: string, userId?: string): Project | null {
   const db = ensureDbFile();
   const p = db.projects.find((proj) => proj.id === projectId);
   if (!p) return null;
-  if (userId && userId !== 'usr-default' && p.userId !== userId) return null;
+  if (userId && p.userId !== userId) return null; // Strict Row-Level Security
   return p;
 }
 
@@ -137,7 +167,6 @@ export function createProject(userId: string, name: string, type: string, initia
   db.projects.push(project);
   db.versions.push(version);
 
-  // Log Event
   db.events.push({
     id: 'evt-' + crypto.randomUUID().substring(0, 8),
     userId,
@@ -149,6 +178,86 @@ export function createProject(userId: string, name: string, type: string, initia
 
   saveDb(db);
   return { project, version };
+}
+
+export function renameProject(projectId: string, userId: string, newName: string): Project | null {
+  const db = ensureDbFile();
+  const project = db.projects.find((p) => p.id === projectId && p.userId === userId);
+  if (!project) return null;
+
+  project.name = newName;
+  project.updatedAt = Date.now();
+  saveDb(db);
+  return project;
+}
+
+export function duplicateProject(projectId: string, userId: string): Project | null {
+  const db = ensureDbFile();
+  const original = db.projects.find((p) => p.id === projectId && p.userId === userId);
+  if (!original) return null;
+
+  const newId = 'proj-' + crypto.randomUUID().substring(0, 8);
+  const now = Date.now();
+
+  const duplicatedProject: Project = {
+    ...original,
+    id: newId,
+    name: `${original.name} (Copy)`,
+    currentVersion: 1,
+    createdAt: now,
+    updatedAt: now,
+  };
+
+  // Copy latest version spec
+  const origVersions = db.versions.filter((v) => v.projectId === projectId).sort((a, b) => b.versionNumber - a.versionNumber);
+  const latestSpec = origVersions[0]?.spec || { meta: { siteId: newId, siteName: duplicatedProject.name, siteType: duplicatedProject.type } };
+
+  const duplicatedVersion: Version = {
+    id: `ver-${newId}-v1`,
+    projectId: newId,
+    versionNumber: 1,
+    spec: JSON.parse(JSON.stringify(latestSpec)),
+    label: `Duplicated from ${original.name}`,
+    createdBy: userId,
+    createdAt: now,
+  };
+
+  db.projects.push(duplicatedProject);
+  db.versions.push(duplicatedVersion);
+
+  db.events.push({
+    id: 'evt-' + crypto.randomUUID().substring(0, 8),
+    userId,
+    projectId: newId,
+    type: 'PROJECT_DUPLICATED',
+    metadata: { originalId: projectId, newName: duplicatedProject.name },
+    createdAt: now,
+  });
+
+  saveDb(db);
+  return duplicatedProject;
+}
+
+export function deleteProject(projectId: string, userId: string): boolean {
+  const db = ensureDbFile();
+  const idx = db.projects.findIndex((p) => p.id === projectId && p.userId === userId);
+  if (idx === -1) return false;
+
+  db.projects.splice(idx, 1);
+  db.versions = db.versions.filter((v) => v.projectId !== projectId);
+  db.submissions = db.submissions.filter((s) => s.projectId !== projectId);
+
+  db.events.push({
+    id: 'evt-' + crypto.randomUUID().substring(0, 8),
+    userId,
+    projectId,
+    type: 'PROJECT_DELETED',
+    metadata: {},
+    createdAt: Date.now(),
+  });
+
+  saveDb(db);
+  return true;
 }
 
 export function createNewVersion(projectId: string, userId: string, spec: SiteSpec, label: string): Version {
@@ -187,8 +296,12 @@ export function createNewVersion(projectId: string, userId: string, spec: SiteSp
   return version;
 }
 
-export function getVersionsForProject(projectId: string): Version[] {
+export function getVersionsForProject(projectId: string, userId?: string): Version[] {
   const db = ensureDbFile();
+  if (userId) {
+    const proj = db.projects.find((p) => p.id === projectId && p.userId === userId);
+    if (!proj) return [];
+  }
   return db.versions.filter((v) => v.projectId === projectId).sort((a, b) => b.versionNumber - a.versionNumber);
 }
 
@@ -220,7 +333,6 @@ export function saveVerificationReport(report: VerificationReport) {
     db.verificationReports.push(report);
   }
 
-  // Update project status if passed
   const ver = db.versions.find((v) => v.id === report.versionId);
   if (ver && report.status === 'PASS') {
     const proj = db.projects.find((p) => p.id === ver.projectId);
@@ -289,6 +401,11 @@ export function logInsightEvent(userId: string, type: string, projectId?: string
   saveDb(db);
 }
 
+export function getUserActivityFeed(userId: string): EventLog[] {
+  const db = ensureDbFile();
+  return db.events.filter((e) => e.userId === userId).sort((a, b) => b.createdAt - a.createdAt).slice(0, 15);
+}
+
 export function getInsightsMetrics(userId: string) {
   const db = ensureDbFile();
   const userProjects = getProjectsForUser(userId);
@@ -296,6 +413,13 @@ export function getInsightsMetrics(userId: string) {
   const verifiedCount = userProjects.filter((p) => p.status === 'verified').length;
   const exportedCount = userProjects.filter((p) => p.status === 'exported').length;
   const draftCount = userProjects.filter((p) => p.status === 'draft').length;
+
+  const projectIds = new Set(userProjects.map((p) => p.id));
+  const userVersions = db.versions.filter((v) => projectIds.has(v.projectId));
+  const totalVersions = userVersions.length;
+
+  const userSubmissions = db.submissions.filter((s) => projectIds.has(s.projectId));
+  const formSubmissionsCount = userSubmissions.length;
 
   const totalEvents = db.events.filter((e) => e.userId === userId);
   const unverifiedResolvedCount = totalEvents.filter((e) => e.type === 'FLAG_RESOLVED').length;
@@ -306,9 +430,12 @@ export function getInsightsMetrics(userId: string) {
     verifiedCount,
     exportedCount,
     draftCount,
+    totalVersions,
+    formSubmissionsCount,
+    unverifiedClaimsCount: 0,
     unverifiedResolvedCount,
     sectionEditCount,
     verificationPassRate: totalProjects > 0 ? Math.round((verifiedCount / totalProjects) * 100) : 100,
-    unintendedSectionChanges: 0, // Enforced byte-level isolated patches
+    unintendedSectionChanges: 0,
   };
 }

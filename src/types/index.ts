@@ -126,6 +126,9 @@ export interface User {
   id: string;
   email: string;
   name: string;
+  passwordHash?: string;
+  resetToken?: string;
+  resetTokenExp?: number;
   createdAt: number;
 }
 

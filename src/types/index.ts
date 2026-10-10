@@ -384,11 +384,21 @@ export interface ProjectPlan {
 /* Knowledge Library Types */
 export type SourceFileType = 'pdf' | 'docx' | 'txt' | 'md' | 'html' | 'pptx' | 'image' | 'url' | 'text';
 
+export interface UserQuota {
+  userId: string;
+  filesUsed: number;
+  bytesUsed: number;
+  maxFiles: number;
+  maxBytes: number;
+}
+
 export interface SourceItem {
   id: string;
   userId: string;
   projectId?: string | null;
   title: string;
+  description?: string;
+  chunkCount?: number;
   authors?: string[];
   year?: number | string;
   type: SourceFileType;
@@ -417,7 +427,9 @@ export interface SourceChunk {
   sourceId: string;
   idx: number;
   text: string;
+  content?: string;
   pageRef?: string | number;
+  pageAnchor?: string;
   embedding?: number[];
   tokenCount: number;
 }

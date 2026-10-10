@@ -393,7 +393,7 @@ function BuilderContent() {
                 <iframe
                   key={iframeKey}
                   src={`/preview/${siteId}`}
-                  sandbox="allow-scripts allow-forms"
+                  sandbox="allow-scripts allow-forms allow-same-origin allow-modals allow-popups"
                   className={`bg-white rounded-md-lg shadow-md-2 border border-md-outline-variant m3-transition h-full ${
                     viewport === 'desktop' ? 'w-full' : viewport === 'tablet' ? 'w-[768px]' : 'w-[375px]'
                   }`}

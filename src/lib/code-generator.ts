@@ -12,6 +12,36 @@ export function generateStandaloneHTML(project: WebsiteProject): string {
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>${escapeHtml(project.title)} — ${escapeHtml(project.description)}</title>
   <meta name="description" content="${escapeHtml(project.description)}">
+  <script>
+    (function() {
+      try {
+        var testKey = '__sf_test__';
+        window.localStorage.setItem(testKey, '1');
+        window.localStorage.removeItem(testKey);
+      } catch (e) {
+        var memoryStorage = {};
+        try {
+          Object.defineProperty(window, 'localStorage', {
+            value: {
+              getItem: function(k) { return memoryStorage[k] || null; },
+              setItem: function(k, v) { memoryStorage[k] = String(v); },
+              removeItem: function(k) { delete memoryStorage[k]; },
+              clear: function() { memoryStorage = {}; }
+            },
+            configurable: true,
+            writable: true
+          });
+        } catch(err) {}
+      }
+      if (typeof navigator !== 'undefined') {
+        if (!navigator.clipboard) {
+          navigator.clipboard = { writeText: function() { return Promise.resolve(); } };
+        } else if (!navigator.clipboard.writeText) {
+          navigator.clipboard.writeText = function() { return Promise.resolve(); };
+        }
+      }
+    })();
+  </script>
   <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
   <script>

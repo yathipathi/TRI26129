@@ -16,6 +16,28 @@ interface ThemeContextType {
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
+// Helper for safe localStorage access without throwing SecurityError in sandboxed contexts
+function safeGetItem(key: string): string | null {
+  try {
+    if (typeof window !== 'undefined' && window.localStorage) {
+      return localStorage.getItem(key);
+    }
+  } catch {
+    // Return null if sandboxed or blocked
+  }
+  return null;
+}
+
+function safeSetItem(key: string, value: string): void {
+  try {
+    if (typeof window !== 'undefined' && window.localStorage) {
+      localStorage.setItem(key, value);
+    }
+  } catch {
+    // Ignore if sandboxed or blocked
+  }
+}
+
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const [themeMode, setThemeModeState] = useState<ThemeMode>('system');
   const [skin, setSkinState] = useState<SkinType>('material3');
@@ -23,8 +45,8 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
 
   // Load saved preferences on mount
   useEffect(() => {
-    const savedTheme = localStorage.getItem('siteforge_theme_mode') as ThemeMode;
-    const savedSkin = localStorage.getItem('siteforge_skin') as SkinType;
+    const savedTheme = safeGetItem('siteforge_theme_mode') as ThemeMode;
+    const savedSkin = safeGetItem('siteforge_skin') as SkinType;
 
     if (savedTheme && ['light', 'dark', 'system'].includes(savedTheme)) {
       setThemeModeState(savedTheme);
@@ -84,12 +106,12 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
 
   const setThemeMode = (mode: ThemeMode) => {
     setThemeModeState(mode);
-    localStorage.setItem('siteforge_theme_mode', mode);
+    safeSetItem('siteforge_theme_mode', mode);
   };
 
   const setSkin = (newSkin: SkinType) => {
     setSkinState(newSkin);
-    localStorage.setItem('siteforge_skin', newSkin);
+    safeSetItem('siteforge_skin', newSkin);
   };
 
   const toggleTheme = () => {
@@ -116,7 +138,6 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
 export function useTheme() {
   const context = useContext(ThemeContext);
   if (!context) {
-    // Provide a safe fallback if used outside provider
     return {
       themeMode: 'system' as ThemeMode,
       skin: 'material3' as SkinType,

@@ -512,7 +512,7 @@ function EditorContent() {
           <div className={`w-full h-full flex flex-col items-center justify-center transition-all ${getViewportWidth()}`}>
             <iframe
               ref={iframeRef}
-              sandbox="allow-scripts allow-forms"
+              sandbox="allow-scripts allow-forms allow-same-origin allow-modals allow-popups"
               src={`/api/preview/${projectId}`}
               title="Visual Live Editor Canvas"
               className="w-full h-full flex-1 bg-white border-0 shadow-lg"

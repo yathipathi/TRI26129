@@ -42,7 +42,7 @@ export default async function FullPreviewPage({ params }: { params: Promise<{ id
       <main className="flex-1 bg-neutral-200 flex flex-col relative overflow-hidden">
         <iframe
           key={id}
-          sandbox="allow-scripts allow-forms"
+          sandbox="allow-scripts allow-forms allow-same-origin allow-modals allow-popups"
           src={`/api/preview/${id}`}
           title={meta?.name || 'Generated Website'}
           className="w-full h-full flex-1 border-0 bg-white"

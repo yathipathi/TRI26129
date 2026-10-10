@@ -35,7 +35,13 @@ export const FileExplorerPanel: React.FC<FileExplorerPanelProps> = ({ project })
   const fileKeys = Object.keys(allFiles);
 
   const handleCopyCode = (code: string) => {
-    navigator.clipboard.writeText(code);
+    try {
+      if (navigator?.clipboard?.writeText) {
+        navigator.clipboard.writeText(code);
+      }
+    } catch {
+      // Ignore if clipboard policy is restricted in sandboxed iframe
+    }
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };

@@ -40,7 +40,13 @@ export const ExportModal: React.FC<ExportModalProps> = ({
   const htmlCode = generateStandaloneHTML(project);
 
   const handleCopy = (text: string) => {
-    navigator.clipboard.writeText(text);
+    try {
+      if (navigator?.clipboard?.writeText) {
+        navigator.clipboard.writeText(text);
+      }
+    } catch {
+      // Ignore if clipboard policy is restricted
+    }
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };

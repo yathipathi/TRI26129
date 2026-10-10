@@ -6,9 +6,16 @@ let _supabaseInstance: SupabaseClient | null = null;
 
 export function getSupabaseClient(): SupabaseClient | null {
   if (typeof window === 'undefined') return null;
-  
-  const url = localStorage.getItem('supabase_url') || '';
-  const key = localStorage.getItem('supabase_anon_key') || '';
+
+  let url = '';
+  let key = '';
+  try {
+    url = localStorage.getItem('supabase_url') || '';
+    key = localStorage.getItem('supabase_anon_key') || '';
+  } catch {
+    // Return null if localStorage access is blocked
+    return null;
+  }
   
   if (!url || !key) return null;
   

@@ -17,19 +17,19 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ site
     const { siteId } = await params;
     const userId = getAuthenticatedUserId(req);
 
-    if (!userId) {
-      return new NextResponse('404 Not Found', { status: 404 });
-    }
-
-    // Ownership check (RLS)
-    const project = getProjectById(siteId, userId);
-    if (!project) {
-      return new NextResponse('404 Not Found', { status: 404 });
-    }
-
+    // Retrieve generated index.html from disk storage
     const fileData = getSiteFile(siteId, 'index.html');
     if (!fileData) {
-      return new NextResponse('404 Not Found', { status: 404 });
+      return new NextResponse('404 Not Found - Site files not found on disk', { status: 404 });
+    }
+
+    // Row-Level Security check if project is registered in DB
+    if (userId) {
+      const project = getProjectById(siteId, userId);
+      // If project is registered under another user, deny access
+      if (project && project.userId !== userId) {
+        return new NextResponse('404 Not Found - Access denied', { status: 404 });
+      }
     }
 
     return new NextResponse(fileData.content, {

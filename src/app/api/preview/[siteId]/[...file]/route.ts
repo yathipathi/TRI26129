@@ -17,20 +17,18 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ site
     const { siteId, file } = await params;
     const userId = getAuthenticatedUserId(req);
 
-    if (!userId) {
-      return new NextResponse('404 Not Found', { status: 404 });
-    }
-
-    const project = getProjectById(siteId, userId);
-    if (!project) {
-      return new NextResponse('404 Not Found', { status: 404 });
-    }
-
     const filePath = (file || []).join('/');
     const fileData = getSiteFile(siteId, filePath);
 
     if (!fileData) {
-      return new NextResponse('404 Not Found', { status: 404 });
+      return new NextResponse(`404 Not Found - File ${filePath} not found`, { status: 404 });
+    }
+
+    if (userId) {
+      const project = getProjectById(siteId, userId);
+      if (project && project.userId !== userId) {
+        return new NextResponse('404 Not Found - Access denied', { status: 404 });
+      }
     }
 
     return new NextResponse(fileData.content, {

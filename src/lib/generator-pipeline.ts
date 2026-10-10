@@ -4,6 +4,7 @@ import { runWebSearch, SearchResult } from './search';
 import { callLLM } from './llm';
 import { saveSiteFiles, GeneratedSiteMeta } from './storage';
 import { getTemplateBySlug } from './templates';
+import { createProject } from './db';
 import fs from 'fs';
 import path from 'path';
 
@@ -24,7 +25,7 @@ export type IntakeInput = z.infer<typeof IntakeSchema>;
 
 export type SSECallback = (step: string, detail?: string, payload?: any) => void;
 
-export async function runGenerationPipeline(rawInput: any, onProgress?: SSECallback): Promise<{ siteId: string; meta: GeneratedSiteMeta }> {
+export async function runGenerationPipeline(rawInput: any, onProgress?: SSECallback, userId: string = 'usr-default'): Promise<{ siteId: string; meta: GeneratedSiteMeta }> {
   // 1. INTAKE & VALIDATION
   const input = IntakeSchema.parse(rawInput);
   const siteId = 'site-' + crypto.randomUUID().substring(0, 8);
@@ -239,6 +240,44 @@ document.addEventListener('DOMContentLoaded', () => {
     sources: sources.map((s) => ({ title: s.title, url: s.url, snippet: s.snippet })),
     brief: brief,
   });
+
+  // Register in DB for user
+  try {
+    const initialSpec = {
+      meta: {
+        siteId,
+        siteName: input.siteName,
+        siteType: input.siteType,
+        goal: input.purpose || '',
+        audience: input.targetAudience || '',
+        tone: input.toneStyle || '',
+        language: input.language || 'English',
+        templateSlug: input.templateSlug,
+      },
+      theme: {
+        palette: brief.colorPalette || { primary: '#09090b', secondary: '#ffffff', accent: '#f97316', background: '#ffffff', text: '#000000' },
+        fonts: { sans: 'Inter', mono: 'JetBrains Mono' },
+        radius: '0.25rem',
+      },
+      pages: [
+        {
+          slug: 'index.html',
+          title: 'Home',
+          seo: { metaTitle: `${brief.title} — ${brief.tagline}`, metaDescription: brief.heroSubtitle || brief.tagline },
+          sections: [
+            { id: `sec-hero-${siteId}`, type: 'hero' as any, title: brief.heroHeadline || input.siteName, subtitle: brief.heroSubtitle || '', props: { title: brief.heroHeadline, subtitle: brief.heroSubtitle } }
+          ]
+        }
+      ],
+      nav: { brandName: input.siteName, links: [{ label: 'Home', href: 'index.html' }] },
+      footer: { brandName: input.siteName, copyright: `© 2026 ${input.siteName}`, links: [] },
+      data: {}
+    };
+
+    createProject(userId, input.siteName, input.siteType, initialSpec);
+  } catch (err) {
+    console.warn('[PIPELINE] Project registration in DB warning:', err);
+  }
 
   onProgress?.('Done', `Generation complete for ${siteId}`, { siteId });
 

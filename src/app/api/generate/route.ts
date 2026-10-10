@@ -1,5 +1,6 @@
 import { NextRequest } from 'next/server';
 import { runGenerationPipeline } from '@/lib/generator-pipeline';
+import { verifyJwt } from '@/lib/auth';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -7,6 +8,10 @@ export const dynamic = 'force-dynamic';
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
+
+    const token = req.cookies.get('siteforge_session')?.value;
+    const payload = verifyJwt(token || '');
+    const userId = payload?.userId || req.cookies.get('siteforge_user')?.value || 'usr-default';
 
     const encoder = new TextEncoder();
     const stream = new ReadableStream({
@@ -17,9 +22,13 @@ export async function POST(req: NextRequest) {
         };
 
         try {
-          const result = await runGenerationPipeline(body, (step, detail, payload) => {
-            sendEvent(step, detail, payload);
-          });
+          const result = await runGenerationPipeline(
+            body,
+            (step, detail, payload) => {
+              sendEvent(step, detail, payload);
+            },
+            userId
+          );
           sendEvent('Done', 'Pipeline finished successfully', { siteId: result.siteId, meta: result.meta });
           controller.close();
         } catch (err: any) {

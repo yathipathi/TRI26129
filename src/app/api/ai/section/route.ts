@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { callLLM } from '@/lib/llm';
-import { getRegistryItem, SECTION_REGISTRY } from '@/lib/section-registry';
-import { SectionSpec } from '@/types';
+import { SectionSpec, SectionType } from '@/types';
 import crypto from 'crypto';
 
 export const runtime = 'nodejs';
@@ -9,56 +8,84 @@ export const dynamic = 'force-dynamic';
 
 export async function POST(req: NextRequest) {
   try {
-    const { description, siteName, siteType } = await req.json();
+    const { prompt, targetPosition, siteType } = await req.json();
 
-    if (!description) {
-      return NextResponse.json({ error: 'Description is required' }, { status: 400 });
+    if (!prompt) {
+      return NextResponse.json({ error: 'Section prompt is required' }, { status: 400 });
     }
 
-    const availableTypes = SECTION_REGISTRY.map((r) => r.type).join(', ');
+    const availableTypes: SectionType[] = [
+      'hero', 'features', 'stats', 'testimonials', 'pricing', 'faq', 'cta', 'contact',
+      'gallery', 'blog', 'team', 'about', 'timeline', 'services-grid', 'menu-grid',
+      'products-grid', 'booking', 'summary', 'key-points', 'glossary', 'flashcards',
+      'quiz', 'compare-table', 'concept-map', 'bibliography', 'faq-sources'
+    ];
 
-    const prompt = `Select the best matching section type from [${availableTypes}] for this user description:
-"${description}"
-Site Context: ${siteName} (${siteType})
+    const systemPrompt = `You are a Lead Web Architect. Convert this user request into a new website section specification:
+"${prompt}"
 
-Return a raw JSON object with keys:
-- "type": string (must be one of [${availableTypes}])
-- "title": string
-- "subtitle": string
-- "badge": string
-- "props": object containing appropriate props for that section type`;
+Available Section Types: ${JSON.stringify(availableTypes)}
 
-    let chosenType: any = 'hero';
-    let newProps: any = {};
-    let title = 'Custom AI Section';
+Return a JSON object:
+{
+  "type": "<one of available Section Types>",
+  "title": "<Section Title>",
+  "subtitle": "<Subtitle>",
+  "badge": "<Badge text or null>",
+  "props": { ... },
+  "rationale": "<1-sentence explanation why this section was created>",
+  "customizationLimit": "<Optional note if request exceeded default component limits>"
+}`;
 
-    try {
-      const rawJson = await callLLM([{ role: 'user', content: prompt }], { jsonMode: true, temperature: 0.3 });
-      const parsed = JSON.parse(rawJson);
-      if (parsed.type && SECTION_REGISTRY.some((r) => r.type === parsed.type)) {
-        chosenType = parsed.type;
-      }
-      title = parsed.title || description.slice(0, 30);
-      newProps = parsed.props || {};
-    } catch {
-      chosenType = 'features';
-    }
-
-    const registryItem = getRegistryItem(chosenType);
-    const finalProps = { ...(registryItem?.defaultProps || {}), ...newProps };
-
-    const newSection: SectionSpec = {
-      id: `sec-${chosenType}-${crypto.randomUUID().substring(0, 6)}`,
-      type: chosenType,
-      title: title || registryItem?.name || chosenType,
-      subtitle: finalProps.subtitle || '',
-      badge: finalProps.badge || 'AI GENERATED',
-      props: finalProps,
-      rationale: `Added by AI based on prompt: "${description}"`,
+    let sectionSpec: SectionSpec = {
+      id: 'sec-' + crypto.randomUUID().substring(0, 8),
+      type: 'features',
+      title: 'AI Generated Section',
+      subtitle: prompt,
+      props: {
+        title: 'AI Generated Section',
+        subtitle: prompt,
+        items: [
+          { id: 'item-1', title: 'Feature 1', description: 'Generated from request: ' + prompt }
+        ]
+      },
+      rationale: 'Generated section matching user description.'
     };
 
-    return NextResponse.json({ success: true, section: newSection });
+    try {
+      const rawJson = await callLLM([
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: prompt }
+      ], { jsonMode: true, temperature: 0.4 });
+
+      const parsed = JSON.parse(rawJson);
+      if (parsed && parsed.type) {
+        sectionSpec = {
+          id: 'sec-' + crypto.randomUUID().substring(0, 8),
+          type: availableTypes.includes(parsed.type) ? parsed.type : 'features',
+          title: parsed.title || 'Custom Section',
+          subtitle: parsed.subtitle || '',
+          badge: parsed.badge || 'AI GENERATED',
+          rationale: parsed.rationale || 'Built from user prompt.',
+          props: {
+            title: parsed.title || 'Custom Section',
+            subtitle: parsed.subtitle || '',
+            badge: parsed.badge || 'AI GENERATED',
+            ...(parsed.props || {})
+          }
+        };
+      }
+    } catch {
+      // Fallback section
+    }
+
+    return NextResponse.json({
+      success: true,
+      section: sectionSpec,
+      position: targetPosition || 'end',
+      changelog: `Added AI section "${sectionSpec.title}" (${sectionSpec.type})`
+    });
   } catch (err: any) {
-    return NextResponse.json({ error: err.message || 'AI section generation failed' }, { status: 500 });
+    return NextResponse.json({ error: err.message || 'Section generation failed' }, { status: 500 });
   }
 }

@@ -38,12 +38,6 @@ export default function SettingsPage() {
           <Link href="/">
             <Button variant="ghost" size="sm">Workspace</Button>
           </Link>
-          <Link href="/design-system">
-            <Button variant="tonal" size="sm">
-              <Palette className="w-3.5 h-3.5" />
-              <span>Design System</span>
-            </Button>
-          </Link>
         </nav>
       </header>
 

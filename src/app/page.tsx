@@ -233,11 +233,13 @@ export default function HomePage() {
             {resolvedTheme === 'light' ? <Moon className="w-4 h-4" /> : <Sun className="w-4 h-4" />}
           </Button>
 
-          <Link href="/design-system">
-            <Button variant="ghost" size="icon" title="View Design System Showcase">
-              <Palette className="w-4 h-4" />
-            </Button>
-          </Link>
+          <button
+            onClick={() => router.push('/settings')}
+            className="p-2 rounded-md-full hover:bg-md-surface-container text-md-on-surface-variant m3-transition"
+            title="Settings"
+          >
+            <Settings className="w-4 h-4" />
+          </button>
 
           {/* User Profile Avatar & Menu */}
           <div className="relative">
@@ -329,10 +331,10 @@ export default function HomePage() {
                 </div>
               </Link>
 
-              <Link href="/design-system" className="block">
+              <Link href="/settings" className="block">
                 <div className="flex items-center gap-3 px-4 py-3 rounded-md-full text-sm font-medium text-md-on-surface-variant hover:bg-md-surface-container m3-transition">
-                  <Palette className="w-4 h-4" />
-                  <span>Design Tokens</span>
+                  <Settings className="w-4 h-4" />
+                  <span>Settings</span>
                 </div>
               </Link>
             </nav>

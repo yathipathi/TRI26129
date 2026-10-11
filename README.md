@@ -1,86 +1,164 @@
-# AI Website Builder & Hostinger-Style Template Engine
+# SiteForge AI Studio 🚀
+### Autonomous Verified Web Engineering Platform & Academic Thesis Generator
 
-An autonomous AI website builder and Hostinger-style template gallery built with Next.js 15 App Router, TypeScript, and Tailwind CSS. The engine collects user specifications, executes real-time web research, synthesizes a structured content brief, generates complete multi-page HTML/CSS/JS websites, validates internal links, and serves them in a sandboxed preview iframe with 1-click ZIP export.
-
----
-
-## Features & Highlights
-
-- **Hostinger-Style Template Gallery**: 12 visually distinct, category-specific website templates (`portfolio`, `restaurant`, `law-firm`, `clinic`, `ecommerce`, `startup-saas`, `education`, `real-estate`, `photography`, `ngo`, `agency`, `blog`).
-- **Free, Card-Free AI Stack**:
-  - Primary LLM: **Groq Free Tier** (`llama-3.3-70b-versatile`).
-  - Fallback LLM: **OpenRouter Free Tier** (`meta-llama/llama-3.3-70b-instruct:free`, `mistralai/mistral-7b-instruct:free`).
-  - Fallback Compiler: Local AI website layout compiler.
-- **Web Research Engine**:
-  - Primary Search: **Tavily Free Tier**.
-  - Fallback Search: **DuckDuckGo** & domain-specific search.
-- **Full Multi-Page Code Generation**: Produces `index.html`, `about.html`, `services.html`, `contact.html`, `styles.css`, and `script.js`.
-- **Inline Refine Chat & ZIP Download**: Apply edits dynamically to generated sites and download standard offline ZIP packages.
+[![Next.js](https://img.shields.io/badge/Next.js-15.1.7-black?style=for-the-badge&logo=next.js)](https://nextjs.org/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.0-blue?style=for-the-badge&logo=typescript)](https://www.typescriptlang.org/)
+[![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-3.4-38B2AC?style=for-the-badge&logo=tailwind-css)](https://tailwindcss.com/)
+[![Playwright](https://img.shields.io/badge/Playwright-Verified-45ba4b?style=for-the-badge&logo=playwright)](https://playwright.dev/)
+[![WCAG 2.2 AA](https://img.shields.io/badge/Accessibility-WCAG_2.2_AA-purple?style=for-the-badge)](https://www.w3.org/WAI/standards-guidelines/wcag/)
+[![License](https://img.shields.io/badge/License-MIT-green?style=for-the-badge)](LICENSE)
 
 ---
 
-## Setup & Running on Windows (PowerShell)
+## 📌 Project Overview
 
-### 1. Prerequisites
-- Node.js (v18 or higher)
-- npm
+**SiteForge AI** is an end-to-end autonomous web engineering studio that solves the core flaws of generic generative AI site builders (hallucinated claims, broken links, single-page vendor lock-in). Given a natural language prompt, SiteForge:
+1. **Researches & Synthesizes**: Performs live web research (Tavily/RAG) and formulates a structured content brief.
+2. **Generates Multi-Page Code**: Compiles semantic HTML5, responsive Tailwind CSS, and interactive client JavaScript tailored precisely to the user's prompt (e.g. real-time voting polls, artisanal bakeries, clinics, e-commerce stores).
+3. **Validates with Headless Crawler**: Executes Playwright crawls to verify zero dead links, responsive breakpoints (375px to 1280px), and form targets before code delivery.
+4. **Auto-Generates University Project Thesis**: Produces an A4-printable, university-compliant thesis report complete with Literature Survey, DFD Level 0/1, ER Diagrams, and UML Diagrams (Class, Use Case, Sequence, Activity).
+5. **Zero Vendor Lock-In**: Delivers an offline-ready standalone ZIP package with 100% code ownership.
 
-### 2. Installation
-```powershell
+---
+
+## 🎓 Academic Thesis & Deliverables Included
+
+This repository includes full academic project documentation formatted according to **KITSW (Kamala Institute of Technology & Science)** B.Tech / M.Tech Major Project Thesis guidelines:
+
+| Deliverable | Location in Repository | Description |
+| :--- | :--- | :--- |
+| **A4 Printable Thesis** | [`public/downloads/THESIS_PRINTABLE.html`](public/downloads/THESIS_PRINTABLE.html) | Single-sided A4 Times New Roman formatted printable thesis document. |
+| **Thesis Report Markdown** | [`public/downloads/PROJECT_THESIS_REPORT.md`](public/downloads/PROJECT_THESIS_REPORT.md) | Structured Chapter 1 to 6 project report with Acknowledgements and Certificates. |
+| **System Architecture & UML** | [`docs/FULL_PROJECT_DOCUMENTATION.md`](docs/FULL_PROJECT_DOCUMENTATION.md) | DFD 0/1, ER Diagram, UML Use Case, Class, Sequence & Activity diagrams. |
+| **Executive PPTX Presentation** | [`public/downloads/SiteForge_Executive_Master_14_Slides.pptx`](public/downloads/SiteForge_Executive_Master_14_Slides.pptx) | 14-slide professional widescreen presentation with diagrams and metrics. |
+| **Demo Video (2:20 min)** | [`public/downloads/SiteForge_Demo_Video_Perfect_2m20s.mp4`](public/downloads/SiteForge_Demo_Video_Perfect_2m20s.mp4) | High-definition self-recording demo video with AI voiceover narration. |
+
+---
+
+## 🏗️ High-Level System Architecture
+
+```
+                     +---------------------------------------+
+                     |         User Natural Prompt           |
+                     | ("generate a live poll application")  |
+                     +-------------------+-------------------+
+                                         |
+                                         v
+                     +---------------------------------------+
+                     |     Intake & Zod Schema Validator     |
+                     +-------------------+-------------------+
+                                         |
+                                         v
+                     +---------------------------------------+
+                     |    Web Retrieval & Research Engine    |
+                     |         (Tavily / RAG Engine)         |
+                     +-------------------+-------------------+
+                                         |
+                                         v
+                     +---------------------------------------+
+                     |    Prompt-Driven Semantic Compiler    |
+                     |   (HTML5, Tailwind, Interactive JS)   |
+                     +-------------------+-------------------+
+                                         |
+                                         v
+                     +---------------------------------------+
+                     |      Playwright Crawler Gate          |
+                     |   (Dead-link & Contrast Verification) |
+                     +-------------------+-------------------+
+                                         |
+                                         v
+                     +---------------------------------------+
+                     |  Packaging & Academic Thesis Engine   |
+                     |  - Multi-page HTML/CSS/JS             |
+                     |  - A4 Printable Thesis HTML           |
+                     |  - UML / ER / DFD Documentation       |
+                     |  - Offline 1-Click ZIP Download       |
+                     +---------------------------------------+
+```
+
+---
+
+## ⚡ Key Modules & Features
+
+### 1. Prompt-Driven Live Application Synthesis
+- Supports custom requirements without template lock-in:
+  - **Live Poll Application**: Real-time voting radio choices, animated percentage bars, live vote counter, and custom poll creation form.
+  - **Artisanal Bakery & Cafe**: Daily hearth menu, organic bread cards with prices, and pickup order form.
+  - **Healthcare & Clinic**: Doctor consultation booking, medical departments, and emergency triage hotline.
+  - **E-Commerce Store**: Featured catalog drops, add-to-cart badges, and cart counter engine.
+
+### 2. Automated Thesis Generator
+- Adheres to standard engineering university thesis guidelines:
+  - **Title Page & College Certificate**
+  - **Acknowledgement & Abstract**
+  - **List of Figures & List of Tables**
+  - **Chapter 1**: Introduction, Existing System with Drawbacks, Proposed System with Features
+  - **Chapter 2**: Literature Survey & Comparative Analysis
+  - **Chapter 3**: Analysis (Hardware/Software, Functional & Non-Functional Requirements)
+  - **Chapter 4**: Design (Block Diagram, DFD Level 0/1, ER Diagram, UML Diagrams, Data Dictionary)
+  - **Chapter 5**: Implementation & Automated Verification
+  - **Chapter 6**: Conclusion & Future Scope
+
+### 3. Automated Crawler Gate
+- Employs headless Playwright automation to verify internal route integrity (`index.html`, `about.html`, `services.html`, `contact.html`).
+- Guards against broken anchors (`href="#"`) and validates contrast according to WCAG 2.2 AA.
+
+---
+
+## 🛠️ Getting Started (Local Setup)
+
+### Prerequisites
+- [Node.js](https://nodejs.org/) (v18.x or v20.x recommended)
+- `npm` or `pnpm`
+
+### Installation
+```bash
+# Clone the repository
+git clone https://github.com/yathipathi/TRI26129.git
+
+# Navigate to project directory
+cd TRI26129
+
 # Install dependencies
 npm install
 ```
 
-### 3. Environment Configuration
+### Environment Configuration
 Copy `.env.example` to `.env`:
-```powershell
-Copy-Item .env.example .env
+```bash
+cp .env.example .env
 ```
 
-To enable live LLM and Web Research API integrations (100% free, no credit card required):
-- **Groq API Key**: Get a free key at [console.groq.com](https://console.groq.com/)
-- **Tavily Search Key**: Get a free key at [tavily.com](https://tavily.com/)
-- **OpenRouter Key**: Get a free key at [openrouter.ai](https://openrouter.ai/)
+*(Optional: Add free API keys for Groq or Tavily in `.env`. If no keys are specified, SiteForge operates deterministically using the built-in local compiler.)*
 
-Paste keys into `.env`:
-```env
-GROQ_API_KEY=gsk_your_free_groq_key
-TAVILY_API_KEY=tvly_your_free_tavily_key
-OPENROUTER_API_KEY=sk-or-v1_your_free_openrouter_key
-PORT=3000
-```
-
-*(Note: If no API keys are set, the platform uses DuckDuckGo web search and the built-in AI layout compiler automatically.)*
-
-### 4. Running Development Server
-```powershell
+### Running the Application
+```bash
 npm run dev
 ```
+
 Open **[http://localhost:3000](http://localhost:3000)** in your browser.
 
 ---
 
-## Routes
+## 🧭 Routes & Endpoints
 
-| Route | Purpose |
-|---|---|
-| `/` | Landing page with prompt intake and template gallery entry |
-| `/templates` | Hostinger template gallery grid across 12 categories |
-| `/templates/[slug]` | Unique live preview of a specific template with "Use Template" button |
-| `/builder` | AI builder with SSE progress log, preview canvas, and refine chat |
-| `/preview/[siteId]` | Full-page render of a generated site |
-| `/api/generate` | POST: SSE streaming generation pipeline |
-| `/api/refine` | POST: Applies inline user edit instructions to site files |
-| `/api/download/[siteId]` | GET: Downloads site files as offline ZIP |
+| Route | Method | Purpose |
+| :--- | :--- | :--- |
+| `/` | `GET` | Landing page with prompt intake and feature showcase. |
+| `/builder` | `GET` | Live AI Site Studio with SSE progress feed, viewport preview, and refine canvas. |
+| `/templates` | `GET` | Hostinger-style curated template catalog across 12 categories. |
+| `/preview/[siteId]` | `GET` | Sandboxed preview of any generated website. |
+| `/api/generate` | `POST` | Server-Sent Events (SSE) streaming multi-agent generation pipeline. |
+| `/api/verify` | `POST` | Headless Playwright crawler verification audit. |
+| `/api/download/[siteId]` | `GET` | Bundles complete website + academic thesis documentation into a ZIP package. |
 
 ---
 
-## Free Cloud Deployment Guide (Vercel & Render)
+## 👥 Acknowledgements
 
-### Vercel Deployment (Free)
-1. Push workspace repository to GitHub.
-2. Import project into Vercel dashboard ([vercel.com](https://vercel.com)).
-3. Set environment variables (`GROQ_API_KEY`, `TAVILY_API_KEY`).
-4. Deploy! Next.js App Router route handlers run serverlessly.
+Special thanks to the faculty and administration of **Kamala Institute of Technology and Science (KITS)**, Department of Computer Science & Engineering, for their continuous support and guidance during the development of this major project.
 
-*(Note: On serverless platforms like Vercel, server storage is ephemeral. Use the 1-click **Download ZIP** flow or attach Vercel Blob / KV if persistent disk storage is required.)*
+---
+
+## 📄 License
+This project is licensed under the [MIT License](LICENSE).

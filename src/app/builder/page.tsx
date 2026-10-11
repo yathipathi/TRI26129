@@ -35,7 +35,7 @@ function BuilderContent() {
   const [toneStyle, setToneStyle] = useState('Professional, Modern, High-Contrast');
   const [colorPreference, setColorPreference] = useState('Material 3 Seed Blue (#0b57d0)');
   const [userContent, setUserContent] = useState('');
-  const [templateSlug, setTemplateSlug] = useState(templateFromQuery);
+  const [templateSlug, setTemplateSlug] = useState<string | undefined>(templateFromQuery || undefined);
 
   // Pipeline State
   const [isGenerating, setIsGenerating] = useState(false);
@@ -70,7 +70,30 @@ function BuilderContent() {
   }, [templateFromQuery]);
 
   const handleGenerate = async () => {
-    if (!siteName.trim()) return;
+    let effectiveSiteName = siteName.trim();
+    let effectiveTemplate = templateSlug;
+    const combinedPrompt = `${purpose} ${effectiveSiteName} ${userContent}`.toLowerCase();
+
+    // Prioritize user's prompt over sticky template
+    if (combinedPrompt.includes('poll') || combinedPrompt.includes('voting') || combinedPrompt.includes('ballot') || combinedPrompt.includes('survey')) {
+      effectiveTemplate = undefined;
+      setTemplateSlug(undefined);
+      if (!effectiveSiteName || effectiveSiteName.includes('Experience') || effectiveSiteName === 'Custom Generated Website') {
+        effectiveSiteName = 'PollPulse Live App';
+        setSiteName('PollPulse Live App');
+      }
+    } else if (purpose.trim().length > 5 && effectiveTemplate) {
+      const isPortfolioSpecific = combinedPrompt.includes('portfolio') || combinedPrompt.includes('resume') || combinedPrompt.includes('curriculum');
+      if (effectiveTemplate === 'portfolio' && !isPortfolioSpecific) {
+        effectiveTemplate = undefined;
+        setTemplateSlug(undefined);
+      }
+    }
+
+    if (!effectiveSiteName) {
+      effectiveSiteName = 'Autonomous Web Application';
+      setSiteName('Autonomous Web Application');
+    }
 
     setIsGenerating(true);
     setStepsLog([]);
@@ -80,13 +103,13 @@ function BuilderContent() {
     setCurrentStep('Planning');
 
     const payload = {
-      siteName,
+      siteName: effectiveSiteName,
       siteType,
       purpose,
       targetAudience,
       toneStyle,
       colorPreference,
-      templateSlug: templateSlug || undefined,
+      templateSlug: effectiveTemplate || undefined,
       userContent,
     };
 
@@ -196,7 +219,7 @@ function BuilderContent() {
 
   const handleExportZip = async () => {
     if (!siteId) return;
-    window.location.href = `/api/export?siteId=${siteId}`;
+    window.location.href = `/api/download/${siteId}`;
   };
 
   return (
@@ -243,7 +266,19 @@ function BuilderContent() {
           <div className="space-y-2">
             <div className="flex items-center gap-2">
               <Badge variant="primary">Step 1: Intake Spec</Badge>
-              {templateSlug && <Badge variant="tonal">Template: {templateSlug}</Badge>}
+              {templateSlug && (
+                <div className="flex items-center gap-1">
+                  <Badge variant="tonal">Template: {templateSlug}</Badge>
+                  <button
+                    type="button"
+                    onClick={() => setTemplateSlug(undefined)}
+                    className="text-[10px] text-md-on-surface-variant hover:text-red-500 font-bold px-1 rounded hover:bg-neutral-200"
+                    title="Remove template lock and use custom prompt"
+                  >
+                    ✕
+                  </button>
+                </div>
+              )}
             </div>
             <h2 className="text-xl font-bold tracking-tight text-md-on-surface">Site Architecture Prompt</h2>
             <p className="text-xs text-md-on-surface-variant">

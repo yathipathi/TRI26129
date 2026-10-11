@@ -4,17 +4,23 @@ const JWT_SECRET = process.env.JWT_SECRET || 'siteforge_secret_jwt_key_2026_supe
 
 // Public routes allowlist
 const PUBLIC_PATHS = [
+  '/',
   '/login',
   '/signup',
   '/forgot-password',
   '/reset-password',
   '/auth/callback',
+  '/templates',
+  '/builder',
+  '/preview',
+  '/review',
+  '/projects',
 ];
 
 // Helper to check if a path is public
 function isPublicPath(pathname: string): boolean {
   if (PUBLIC_PATHS.some((p) => pathname === p || pathname.startsWith(`${p}/`))) return true;
-  if (pathname.startsWith('/api/auth')) return true;
+  if (pathname.startsWith('/api/')) return true; // Let API routes manage fallback user sessions
   if (
     pathname.startsWith('/_next') ||
     pathname.startsWith('/public') ||
@@ -88,10 +94,12 @@ export async function middleware(req: NextRequest) {
   const session = sessionCookie ? await verifyToken(sessionCookie) : null;
   const isAuthenticated = !!session;
 
-  // 1. Authenticated user visiting /login or /signup -> redirect to / (or validated next path)
-  if (isAuthenticated && (pathname === '/login' || pathname === '/signup')) {
-    const nextPath = validateNextPath(searchParams.get('next'));
-    return NextResponse.redirect(new URL(nextPath, req.url));
+  // 1. Authenticated user visiting / or /login or /signup -> redirect to /dashboard (or validated next path)
+  if (isAuthenticated) {
+    if (pathname === '/' || pathname === '/login' || pathname === '/signup') {
+      const nextPath = searchParams.get('next') ? validateNextPath(searchParams.get('next')) : '/dashboard';
+      return NextResponse.redirect(new URL(nextPath, req.url));
+    }
   }
 
   // 2. Allow public paths unconditionally

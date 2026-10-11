@@ -1,5 +1,6 @@
 import fs from 'fs';
 import path from 'path';
+import { generateFullProjectDocumentation } from './project-doc-generator';
 
 export interface GeneratedSiteMeta {
   siteId: string;
@@ -33,6 +34,33 @@ export function saveSiteFiles(siteId: string, files: Record<string, string>, met
     ensureDir(path.dirname(fullPath));
     fs.writeFileSync(fullPath, content, 'utf-8');
     fileNames.push(relativePath);
+  }
+
+  // Automatically synthesize academic thesis & documentation dossier for every created project
+  try {
+    const docFiles = generateFullProjectDocumentation({
+      title: meta.name || 'Generated Website',
+      id: siteId,
+      category: meta.type || 'Web Application',
+      prompt: meta.prompt || '',
+      pages: fileNames.filter((f) => f.endsWith('.html')).map((f) => ({
+        slug: f,
+        title: f.replace('.html', '').replace(/^\w/, (c) => c.toUpperCase()),
+      })),
+      sources: meta.sources || [],
+      createdAt: Date.now(),
+    });
+
+    for (const [docRelPath, docContent] of Object.entries(docFiles)) {
+      const fullPath = path.join(siteDir, docRelPath);
+      ensureDir(path.dirname(fullPath));
+      fs.writeFileSync(fullPath, docContent, 'utf-8');
+      if (!fileNames.includes(docRelPath)) {
+        fileNames.push(docRelPath);
+      }
+    }
+  } catch (err) {
+    console.warn('Doc generation warning in saveSiteFiles:', err);
   }
 
   const siteMeta: GeneratedSiteMeta = {

@@ -61,11 +61,14 @@ export function generateStandaloneHTML(project: WebsiteProject): string {
   </script>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
-    body {
-      background-color: #ffffff;
-      color: #000000;
-      font-family: 'Inter', system-ui, -apple-system, sans-serif;
-      -webkit-font-smoothing: antialiased;
+    *, ::before, ::after { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; font-family: 'Inter', system-ui, -apple-system, sans-serif; overflow-x: hidden; background-color: #ffffff; color: #000000; -webkit-font-smoothing: antialiased; }
+    ul, ol, nav { list-style: none; margin: 0; padding: 0; }
+    a { text-decoration: none; color: inherit; }
+    .hidden { display: none !important; }
+    @media (min-width: 768px) {
+      .md\:flex { display: flex !important; }
+      .md\:hidden { display: none !important; }
     }
     ::selection {
       background-color: #000000;

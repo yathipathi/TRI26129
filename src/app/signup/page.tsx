@@ -68,7 +68,7 @@ function SignupContent() {
       const data = await res.json();
 
       if (res.ok && data.success) {
-        router.push('/');
+        router.push('/dashboard');
         router.refresh();
       } else {
         setErrorMessage(data.error || 'Signup failed');

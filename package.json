@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "record-demo": "node scripts/record_full_demo.js"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.117.3",
@@ -27,6 +28,9 @@
     "@types/node": "^22.20.5",
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.0.4",
+    "ffmpeg-static": "^5.3.0",
+    "google-tts-api": "^2.0.2",
+    "playwright": "^1.64.0",
     "postcss": "^8.5.29",
     "tailwindcss": "^3.4.19",
     "typescript": "^5.9.3"

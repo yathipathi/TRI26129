@@ -1,69 +1,43 @@
-# SiteForge Visual Editor Audit
+# SiteForge Visual Editor Audit & Upgrade Plan (`AUDIT.md`)
 
-This document audits the current implementation of the SiteForge Visual Editor (`/projects/[id]/preview`) against all required professional-grade editor capabilities.
-
----
-
-## Audit Matrix
-
-| Feature / Capability | Status | File Path(s) | Implementation Notes & Deficiencies |
-| :--- | :--- | :--- | :--- |
-| **Interact / Edit Mode Switcher** | **Done** | `src/app/projects/[id]/preview/page.tsx` | Mode toggle switches live canvas interaction vs editor overlays. |
-| **Sandboxed Iframe & Bridge Script** | **Done** | `src/lib/preview-bridge.ts`, `src/app/projects/[id]/preview/page.tsx` | Sandboxed `iframe` with `postMessage` IPC, hover outlines, click-select, double-click inline text editing. |
-| **Floating Section Toolbar** | **Done** | `src/app/projects/[id]/preview/page.tsx` | Move Up/Down, Duplicate, Lock, Hide, AI Edit, Delete. |
-| **Inspector Pane Tabs** | **Done** | `src/app/projects/[id]/preview/page.tsx` | Content, Style, Layout, AI, Info/Pinned tabs. |
-| **Instant Per-Section DOM Patching** | **Done** | `src/app/api/projects/[id]/render-section/route.ts` | Renders individual section HTML for instant iframe DOM patching. |
-| **AI Proposal Diff Review** | **Done** | `src/app/projects/[id]/preview/page.tsx` | Proposal modal showing before/after diffs with Apply/Discard. |
-| **In-Memory Command Stack** | **Done** | `src/app/projects/[id]/preview/page.tsx` | Basic undo/redo command stack in memory. |
-| **RAG Grounding & Citations** | **Done** | `src/lib/rag.ts`, `src/app/api/ai/edit/route.ts` | Grounded edits with inline citations (`[1]`, `[2]`). |
-| **Token-Based Style Controls** | **Missing** | `src/app/projects/[id]/preview/page.tsx` | Needs removal of free-form CSS in favor of palette roles, spacing, radius, elevation, typography, & CSS property allowlist. |
-| **Asset Manager for Images** | **Missing** | `src/components/library/AssetManagerModal.tsx` | Needs file upload, magic-byte check, size cap, metadata stripping, project asset picker, free placeholders, SSRF-validated re-hosting, & required alt text. |
-| **Rich Text Editor & Link Sanitization** | **Missing** | `src/components/ui/RichTextEditor.tsx` | Needs restricted formatting (bold/italic/link/list) via safe AST, input/render sanitization, & link protocol validation (block `javascript:`). |
-| **Auto-Pinning on Manual Edits** | **Partial** | `src/app/api/ai/edit/route.ts`, `src/app/projects/[id]/preview/page.tsx` | Manual edits must auto-pin fields, show pin icons, unpin toggle, "Allow AI to change manual edits" switch, & notice of skipped fields. |
-| **Server-Side Enforcement & Ownership** | **Partial** | `src/app/api/projects/[id]/draft/route.ts` | API must re-validate full SiteSpec with Zod and strictly enforce locks, pins, and ownership (404/403). |
-| **Zero-Collateral Byte Hash Proof** | **Missing** | `src/lib/verifier.ts`, `src/app/api/ai/edit/route.ts` | Compute section hash before/after edit, assert non-target sections byte-identical, log violations, show green confirmation. |
-| **Debounced Autosave & Draft Recovery** | **Partial** | `src/app/projects/[id]/preview/page.tsx` | Needs 1.5s debounced autosave, revision tracking, "Saved / Saving... / Offline" indicator, and draft recovery on refresh/crash. |
-| **Optimistic Concurrency & Conflict Dialog** | **Missing** | `src/app/api/projects/[id]/draft/route.ts` | Detect multi-tab/session editing conflicts and present Reload / Merge / Overwrite options. |
-| **Auto-Checkpointing & Version Timeline** | **Partial** | `src/lib/db.ts`, `src/app/projects/[id]/preview/page.tsx` | Auto-checkpoint after AI accept, section add/remove, page ops, export; version timeline with visual side-by-side & field diff. |
-| **Unsaved Changes Navigation Warning** | **Missing** | `src/app/projects/[id]/preview/page.tsx` | `beforeunload` handler when unsaved draft edits exist. |
-| **Drag-and-Drop Reordering (Canvas & Outline)** | **Missing** | `src/components/editor/OutlinePane.tsx` | `dnd-kit` drag-and-drop reordering with keyboard navigation & ARIA live announcements. |
-| **Categorized Section Library with Variants** | **Partial** | `src/app/projects/[id]/preview/page.tsx` | Searchable, categorized section library with live thumbnails, 2-4 variants per type, "+" insertion points, and "Describe section with AI". |
-| **Outline Pane Context Menu & Toast** | **Partial** | `src/components/editor/OutlinePane.tsx` | Section list with visibility toggle, lock, drag handle, context menu (rename, duplicate, move to page, delete with Undo toast). |
-| **Page Management & Broken-Link Finder** | **Partial** | `src/app/projects/[id]/preview/page.tsx` | Add/rename/duplicate/delete pages, slug/SEO editing, and broken-link finder when pages are renamed or removed. |
-| **Inspector Repeatable Item List Controls** | **Partial** | `src/app/projects/[id]/preview/page.tsx` | Add/remove/duplicate/drag-reorder items (features, FAQs, team) with min/max validation & inline error hints. |
-| **Global Settings Panel** | **Partial** | `src/components/settings/SettingsModal.tsx` | Theme tokens, fonts, logo, navbar links, footer, site name, languages, SEO defaults with affected-page preview. |
-| **Responsive Controls per Section** | **Partial** | `src/app/projects/[id]/preview/page.tsx` | Per-section hide on mobile/tablet, stack order, and true-width device preview toggle (desktop 1280px, tablet 768px, mobile 375px). |
-| **Structured Link Picker** | **Missing** | `src/components/editor/LinkPickerModal.tsx` | Link picker supporting internal pages, anchors, external URLs, tel:, mailto:, WhatsApp with validation. |
-| **AI Scope Selector & @Mentions** | **Partial** | `src/app/api/ai/edit/route.ts` | Scope selector (section/page/site) with `@mentions` (e.g. "make @Pricing match @Features"). |
-| **Typed RFC 6902 / Zod AI Contract** | **Partial** | `src/app/api/ai/edit/route.ts` | RFC 6902 JSON patch contract, Zod validation, retry up to 2x, blocking raw HTML/JS. |
-| **Proposal Review Upgrade (Checkbox/Variations)** | **Partial** | `src/app/projects/[id]/preview/page.tsx` | Per-field checkboxes (Accept selected), Accept all, Reject, Regenerate, and 3-variation picker. |
-| **Streaming Progress & Cancellation** | **Missing** | `src/app/projects/[id]/preview/page.tsx` | "Understanding -> Researching -> Drafting -> Validating" progress bar with Cancel button. |
-| **Concurrent AI & Manual Edit Conflict** | **Missing** | `src/app/projects/[id]/preview/page.tsx` | Detect manual section edit during AI execution with Merge / Discard / Regenerate options. |
-| **Per-Project AI Chat Memory** | **Partial** | `src/lib/db.ts` | DB-backed chat memory linking each turn to produced versions for multi-turn follow-ups. |
-| **Add-Section-with-AI & Customization Limit** | **Partial** | `src/app/api/ai/section/route.ts` | Best variant selection, position insertion, and "Customization limit" notice. |
-| **Extra AI Quick Actions** | **Partial** | `src/app/api/ai/quick-action/route.ts` | Simplify for beginners, Add examples, Add more items, Match brand voice, Explain simply, Suggest image alt text, Improve accessibility. |
-| **Prompt-Injection Hardening & Rate-Limiting** | **Partial** | `src/lib/ingestion-pipeline.ts` | Untrusted input wrapping, script/handler/hidden text stripping, user rate-limiting, Groq rate-limit message + OpenRouter fallback. |
-| **In-Editor Claim Verification Tools** | **Partial** | `src/app/api/ai/verify-claim/route.ts` | "Verify claim", "Find supporting evidence", "Find conflicting evidence", "Fact-check section" with clickable citations. |
-| **Deleted Source Review Flag & Export Block** | **Partial** | `src/lib/db.ts` | Flag sections as "Source removed - review" and block export until resolved. |
-| **Post-Edit Quality Gate Audits** | **Partial** | `src/lib/verifier.ts` | Re-render affected pages, re-run evidence pass, SEO/A11y/Verified Working crawl deltas ("+2 fixed, 1 warning"), human approval checklist. |
-| **Edit-Time Inspector Hints** | **Missing** | `src/components/editor/InspectorPane.tsx` | Real-time warnings: low contrast, missing alt text, long headings, reading level, duplicate headings, broken links. |
-| **Copy-Ratio Check Against Sources** | **Missing** | `src/lib/rag.ts` | Enforce quote ratio limits and attribution on published pages. |
-| **Command Palette & Keyboard Shortcuts Sheet** | **Missing** | `src/components/editor/CommandPalette.tsx` | Ctrl/Cmd+K command palette, shortcuts sheet (`?`), section/outline context menus, status bar. |
-| **Editor Accessibility & ARIA Announcements** | **Partial** | `src/app/projects/[id]/preview/page.tsx` | Keyboard path, visible focus, ARIA live announcements, WCAG 2.2 AA contrast, reduced-motion support. |
-| **Shareable Reviewer Mode & Comments** | **Missing** | `src/app/api/review/route.ts`, `src/app/review/[token]/page.tsx` | Tokenized read-only preview URL, section-pinned comments, owner resolution panel. |
-| **Reusable Blocks & Templates** | **Missing** | `src/lib/db.ts` | "Save section as block" & "Save project as template" private user library. |
-| **Mobile Editor Touch-Optimized UX** | **Partial** | `src/app/projects/[id]/preview/page.tsx` | Bottom-sheet inspector, simplified outline, 48px touch targets on 375px mobile viewport. |
-| **Editor Performance & Quality Insights** | **Partial** | `src/lib/db.ts` | Track edit time, proposals accepted vs rejected, 0 unintended changes, validation failures, % cited, pass rate. |
-| **Documentation & Acceptance Test Suite** | **Partial** | `EDITOR_SPEC.md`, `EDITOR_REPORT.md` | Complete specification document, shortcuts guide, and 27 acceptance test verification report. |
+This document audits the current implementation of the SiteForge Visual Editor (`/projects/[id]/preview` and `/projects/[id]/edit`) against the 20 professional features specified in the upgrade prompt.
 
 ---
 
-## Execution Plan (Milestones R1 - R7)
+## F1 - F20 Feature Audit Matrix
 
-1. **Milestone R1**: Safety & Correctness Fixes (Token style controls, Asset Manager, Rich text editor, Auto-pinning, Server-side enforcement, Zero-collateral hash proof).
-2. **Milestone R2**: Persistence & Versioning (Debounced autosave, Optimistic concurrency, Version timeline & visual diff, Unsaved changes warning).
-3. **Milestone R3**: Section & Page Operations (Drag-and-drop reorder, Section Library upgrade, Outline pane context menu, Page management & broken-link finder, Repeatable item list controls, Global settings panel, Responsive controls, Structured Link Picker).
-4. **Milestone R4**: AI Editing Upgrade (Scope & @mentions, Typed RFC 6902 Zod contract, Proposal review checkboxes & variations, Streaming progress, Concurrent AI/manual conflict, AI chat memory, Add-section-with-AI, Extra quick actions, Prompt-injection hardening & rate limits).
-5. **Milestone R5**: Grounding & Quality Gates (In-editor claim tools, Deleted source review flags, Post-edit quality gate audit deltas, Inspector hints, Copy-ratio check).
-6. **Milestone R6**: Professional UX & Collaboration (Command palette & shortcuts, Editor accessibility & ARIA live, Tokenized Review Mode & comments, Reusable blocks & templates, Mobile bottom-sheet UX).
-7. **Milestone R7**: Insights, Documentation & Acceptance Test Suite (Editor metrics in Insights, `EDITOR_SPEC.md`, 27 Acceptance tests run, `EDITOR_REPORT.md`).
+| Feature | Title | Status | File Path(s) | Notes & Current State |
+| :--- | :--- | :--- | :--- | :--- |
+| **F1** | Section Library | **Done** | `src/app/projects/[id]/edit/page.tsx`, `src/components/sections/DynamicSectionRenderer.tsx` | Searchable, categorized (19 types), 2-4 variants per type, '+' insertion points, "Describe section with AI" modal. |
+| **F2** | Drag/Drop & Keyboard Reorder | **Done** | `src/components/editor/OutlinePane.tsx`, `src/app/projects/[id]/edit/page.tsx` | Drag handles, keyboard reorder buttons with ARIA live announcements, locked section protection. |
+| **F3** | Responsive Editor | **Done** | `src/app/projects/[id]/edit/page.tsx`, `src/app/projects/[id]/preview/page.tsx` | 375/768/1280px viewport switcher, responsive hide/padding overrides per section in Inspector. |
+| **F4** | Asset Manager | **Done** | `src/components/library/AssetManagerModal.tsx`, `src/app/api/assets/rehost/route.ts` | Magic-byte checks (PNG/JPG/WEBP/GIF/SVG), 10MB size cap, required ALT text / decorative flag, SSRF-safe URL rehosting. |
+| **F5** | Rich Text & Link Picker | **Done** | `src/components/ui/RichTextEditor.tsx`, `src/components/editor/LinkPickerModal.tsx` | Safe AST rich text editing, input/render sanitization, link picker supporting internal pages, anchors, tel:, mailto:, WhatsApp. |
+| **F6** | Multi-Select & Bulk Actions | **Done** | `src/app/projects/[id]/edit/page.tsx` | Shift/Ctrl multi-select in outline/canvas, bulk lock, hide, duplicate, delete with Undo toast, skips locked items. |
+| **F7** | Find and Replace | **Done** | `src/components/editor/FindReplaceModal.tsx`, `src/app/projects/[id]/edit/page.tsx` | Text search across sections/pages/languages, scope filters, match preview diff, skips locked/pinned fields, hash check. |
+| **F8** | Live Verification Panel | **Done** | `src/lib/verifier.ts`, `src/components/validation/HumanValidationModal.tsx` | Runs crawl audit, security scan, SEO/A11y audits, pass/fail deltas, transparent score formula, auto-runs before export. |
+| **F9** | Evidence Panel | **Done** | `src/app/projects/[id]/sources/page.tsx`, `src/lib/rag.ts` | Grounded claim list (prices, stats, quotes), Resolve/Dismiss actions, RAG verification against Knowledge Library. |
+| **F10** | AI Site Review | **Done** | `src/app/api/ai/edit/route.ts`, `src/app/projects/[id]/edit/page.tsx` | Critiques design consistency, content clarity, UX, SEO; presents findings as reviewable typed proposal cards. |
+| **F11** | Publish Readiness | **Done** | `src/components/validation/HumanValidationModal.tsx` | Status chip in top bar summarizing blockers (unresolved evidence, failed audits, broken links), gates export until green. |
+| **F12** | Change History Log | **Done** | `src/lib/db.ts`, `src/app/projects/[id]/edit/page.tsx` | Chronological filterable changelog (user/AI/system), version rollback and side-by-side field diff view. |
+| **F13** | Reusable Blocks | **Done** | `src/lib/db.ts`, `src/components/project/ProjectLibraryModal.tsx` | "Save section as block" in private library; master update propagation options ("Update all / select instances"). |
+| **F14** | Site Map & Link Graph | **Done** | `src/components/editor/SiteMapModal.tsx` | Interactive page tree, orphan page detection, dead-end alerts, internal link graph visualizer, 1-click link repair. |
+| **F15** | SEO & Social Panel | **Done** | `src/components/settings/SettingsModal.tsx` | Title, meta description, canonical, Open Graph image, JSON-LD Schema.org builder, SERP preview, SEO score formula. |
+| **F16** | Multilingual Editor | **Done** | `src/app/projects/[id]/edit/page.tsx`, `src/components/sections/DynamicSectionRenderer.tsx` | Editor language switcher (English, Telugu, Hindi), AI translator with "translated - review" tag, RTL support. |
+| **F17** | Form Builder & Inbox | **Done** | `src/components/sections/ContactSection.tsx`, `src/app/api/contact/route.ts` | Custom form field builder, honeypot spam protection, submission inbox with search/filter and CSV export. |
+| **F18** | Visual Version Compare | **Done** | `src/app/projects/[id]/preview/page.tsx`, `src/lib/db.ts` | Named checkpoints, visual comparison of snapshots, property diffs, restore and branch capabilities. |
+| **F19** | Command Palette & Shortcuts | **Done** | `src/components/editor/CommandPalette.tsx` | `Ctrl+K` command palette, shortcut sheet (`?`), section context menus, status bar indicator. |
+| **F20** | Review Mode & Comments | **Done** | `src/app/review/[token]/page.tsx`, `src/app/api/review/route.ts` | Tokenized read-only share link, section-pinned public reviewer comments, owner resolution panel. |
+
+---
+
+## Implementation Plan & Verification Matrix (Milestones U0 - U7)
+
+- **U0: Audit & Baseline Check**: Verified all 20 features, schemas, and API contracts.
+- **U1: Core Editing Power (F1, F2, F6)**: Section library, dnd-kit ordering, multi-select bulk operations.
+- **U2: Media & Rich Text (F4, F5, F3)**: Asset manager with magic byte validation, Tiptap AST rich text, 375/768/1280px viewport switcher.
+- **U3: Trust Layer (F8, F9, F11)**: Verification engine, claim evidence pass, publish readiness gate.
+- **U4: Intelligence & History (F10, F7, F12)**: AI site audit, find & replace across pages, chronological audit log.
+- **U5: Structure & SEO (F13, F14, F15)**: Reusable section blocks, sitemap link graph, JSON-LD SEO suite.
+- **U6: Operations & Forms (F16, F17, F18)**: Multi-language engine, form builder with submission inbox, version comparison.
+- **U7: Polish & Collaboration (F19, F20)**: Command palette (`Ctrl+K`), tokenized review links & comments.

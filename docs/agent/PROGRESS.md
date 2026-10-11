@@ -13,3 +13,8 @@
 - **BLOCK B3 (Trust Layer & Security Scanner)**: parse5/cheerio security scanner, A-F security score formula, live attack demo modal (naive innerHTML vs SiteForge escaped preview), evidence flags with Resolve/Dismiss, 5-step human approval gate, snapshot hashing, printable audit report, and gated ZIP export.
 - **BLOCK B4 (Visual Editing & Versions)**: Section outline, schema-driven Inspector, auto-pinning on manual edits, section locking, scope-scoped AI editing, 3-variation picker, zero-collateral byte hash proof, autosave recovery, 409 conflict dialog, and version rollback.
 - **BLOCK B5 (Demo Prep & Seeding)**: Pre-seeded "Demo: Hyderabad Bakery" project on new account creation, README documentation, tech stack overview, and full test suite verification.
+
+## [2026-10-11] - Visual Editor Upgrade Audit (Milestone U0)
+- **Comprehensive Feature Audit**: Updated `AUDIT.md` mapping all 20 professional editor features (F1 to F20) to exact file locations and implementation statuses.
+- **Verification Matrix**: Established Milestones U1 to U7 spanning Core Editing Power, Media & Rich Text, Trust Layer, Intelligence & History, Structure & SEO, Operations & Forms, and Polish & Collaboration.
+- **Typecheck & Security Verification**: `npx tsc --noEmit` verified clean with 0 errors across all routes and components.

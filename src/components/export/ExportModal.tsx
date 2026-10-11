@@ -9,6 +9,7 @@ import {
   Sparkles, RefreshCw, CheckCircle2, Shield
 } from 'lucide-react';
 import JSZip from 'jszip';
+import { generateFullProjectDocumentation } from '@/lib/project-doc-generator';
 
 interface ExportModalProps {
   project: WebsiteProject;
@@ -62,6 +63,19 @@ export const ExportModal: React.FC<ExportModalProps> = ({
         folder.file(filepath, content);
       });
       folder.file('index.html', htmlCode);
+
+      // Dynamically attach full project documentation, ER diagrams & UML
+      const docFiles = generateFullProjectDocumentation({
+        title: project.title,
+        id: project.id,
+        category: project.industry || 'Web Application',
+        prompt: project.prompt || '',
+        sections: project.sections,
+        createdAt: project.createdAt || Date.now(),
+      });
+      Object.entries(docFiles).forEach(([docPath, docContent]) => {
+        folder.file(docPath, docContent);
+      });
 
       const content = await zip.generateAsync({ type: 'blob' });
       const url = URL.createObjectURL(content);

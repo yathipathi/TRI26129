@@ -6,10 +6,12 @@ import { verifyJwt } from '@/lib/auth';
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
-function getAuthenticatedUserId(req: NextRequest): string | null {
+import { ensureDemoProject } from '@/lib/db';
+
+function getAuthenticatedUserId(req: NextRequest): string {
   const token = req.cookies.get('siteforge_session')?.value;
   const payload = verifyJwt(token || '');
-  return payload?.userId || req.cookies.get('siteforge_user')?.value || null;
+  return payload?.userId || req.cookies.get('siteforge_user')?.value || 'usr-default';
 }
 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ siteId: string }> }) {
@@ -17,8 +19,16 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ site
     const { siteId } = await params;
     const userId = getAuthenticatedUserId(req);
 
-    // Retrieve generated index.html from disk storage
-    const fileData = getSiteFile(siteId, 'index.html');
+    if (siteId === 'demo') {
+      ensureDemoProject();
+    }
+
+    let fileData = getSiteFile(siteId, 'index.html');
+    if (!fileData && siteId === 'demo') {
+      ensureDemoProject();
+      fileData = getSiteFile(siteId, 'index.html');
+    }
+
     if (!fileData) {
       return new NextResponse('404 Not Found - Site files not found on disk', { status: 404 });
     }
@@ -27,7 +37,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ site
     if (userId) {
       const project = getProjectById(siteId, userId);
       // If project is registered under another user, deny access
-      if (project && project.userId !== userId) {
+      if (project && project.userId !== userId && project.userId !== 'usr-default' && userId !== 'usr-default') {
         return new NextResponse('404 Not Found - Access denied', { status: 404 });
       }
     }

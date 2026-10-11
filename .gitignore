@@ -6,3 +6,7 @@ data/siteforge_db.json
 generated
 .env
 .env.local
+tsconfig.tsbuildinfo
+scratch
+*.log
+~$*
